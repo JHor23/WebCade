@@ -1,0 +1,8 @@
+{
+  "name": "ZeroPlay",
+  "description": "Full-screen hardware-accelerated web browser engineered for cloud gaming platforms and low-latency play.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
