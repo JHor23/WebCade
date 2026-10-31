@@ -54,6 +54,8 @@ class GamingWebClient(
             )
             // Inject virtual gamepad bridge into DOM
             view?.evaluateJavascript(VirtualGamepadBridge.INJECTION_SCRIPT, null)
+            // Inject keyboard & mouse emulation bridge into DOM
+            view?.evaluateJavascript(com.example.gamepad.GamepadEmulationEngine.KBM_INJECTION_SCRIPT, null)
         }
 
         override fun onReceivedError(

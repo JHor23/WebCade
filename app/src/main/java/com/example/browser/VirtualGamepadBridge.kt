@@ -11,8 +11,8 @@ object VirtualGamepadBridge {
      */
     val INJECTION_SCRIPT = """
         (function() {
-            if (window.__zeroPlayGamepadInstalled) return;
-            window.__zeroPlayGamepadInstalled = true;
+            if (window.__webCadeGamepadInstalled) return;
+            window.__webCadeGamepadInstalled = true;
             
             var padState = {
                 buttons: new Array(17).fill(0).map(() => ({ pressed: false, touched: false, value: 0.0 })),
@@ -31,7 +31,7 @@ object VirtualGamepadBridge {
                 vibrationActuator: null
             };
 
-            window.__updateZeroPlayGamepad = function(lx, ly, rx, ry, btnMask, lt, rt) {
+            window.__updateWebCadeGamepad = function(lx, ly, rx, ry, btnMask, lt, rt) {
                 fakeGamepad.timestamp = performance.now();
                 fakeGamepad.axes[0] = lx;
                 fakeGamepad.axes[1] = ly;
@@ -72,7 +72,7 @@ object VirtualGamepadBridge {
                 return list;
             };
 
-            console.log("ZeroPlay: Virtual Gamepad shim initialized.");
+            console.log("WebCade: Virtual Gamepad shim initialized.");
         })();
     """.trimIndent()
 
@@ -88,7 +88,7 @@ object VirtualGamepadBridge {
     ) {
         webView?.post {
             webView.evaluateJavascript(
-                "if (window.__updateZeroPlayGamepad) { window.__updateZeroPlayGamepad($lx, $ly, $rx, $ry, $btnMask, $lt, $rt); }",
+                "if (window.__updateWebCadeGamepad) { window.__updateWebCadeGamepad($lx, $ly, $rx, $ry, $btnMask, $lt, $rt); }",
                 null
             )
         }

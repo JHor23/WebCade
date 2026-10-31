@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "ZeroPlay"
+rootProject.name = "WebCade"
 
 include(":app")

@@ -17,7 +17,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.gamepad.GamepadManager
 import com.example.ui.GamingBrowserScreen
-import com.example.ui.theme.ZeroPlayTheme
+import com.example.ui.theme.WebCadeTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
         gamepadManager = GamepadManager(this)
 
         setContent {
-            ZeroPlayTheme {
+            WebCadeTheme {
                 GamingBrowserScreen(
                     gamepadManager = gamepadManager,
                     isMenuRequestedFromGamepad = isMenuRequestedFromGamepad,

@@ -32,7 +32,7 @@ private val GamingColorScheme = darkColorScheme(
 )
 
 @Composable
-fun ZeroPlayTheme(
+fun WebCadeTheme(
     content: @Composable () -> Unit
 ) {
     val view = LocalView.current

@@ -57,6 +57,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadStatus
 import com.example.model.GamingPresets
 import com.example.model.UserAgentMode
@@ -78,6 +79,8 @@ fun GamingPortalHome(
     selectedUserAgent: UserAgentMode,
     onUserAgentChanged: (UserAgentMode) -> Unit,
     onLaunchUrl: (url: String, ua: UserAgentMode) -> Unit,
+    controllerMode: ControllerMode = ControllerMode.DEDICATED_GAMEPAD,
+    onOpenControllerMapping: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var urlInput by remember { mutableStateOf("") }
@@ -136,14 +139,14 @@ fun GamingPortalHome(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SportsEsports,
-                                contentDescription = "ZeroPlay Logo",
+                                contentDescription = "WebCade Logo",
                                 tint = CyberCyan,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
                         Column {
                             Text(
-                                text = "ZeroPlay Gaming Browser",
+                                text = "WebCade Gaming Browser",
                                 color = TextPrimary,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Black
@@ -158,14 +161,17 @@ fun GamingPortalHome(
                         }
                     }
 
-                    // Controller status pill
+                    // Controller status pill (clickable to configure mapping)
                     Surface(
                         color = DarkSurfaceElevated,
                         shape = RoundedCornerShape(20.dp),
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
-                            if (gamepadStatus.isConnected) NeonGreen else DarkBorder
-                        )
+                            if (gamepadStatus.isConnected) CyberCyan else DarkBorder
+                        ),
+                        modifier = Modifier
+                            .clickable { onOpenControllerMapping() }
+                            .testTag("portal_controller_config_btn")
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -181,8 +187,12 @@ fun GamingPortalHome(
                                     )
                             )
                             Text(
-                                text = if (gamepadStatus.isConnected) "Controller Ready" else "Touch Ready",
-                                color = if (gamepadStatus.isConnected) NeonGreen else TextSecondary,
+                                text = if (gamepadStatus.isConnected) {
+                                    if (controllerMode == ControllerMode.DEDICATED_GAMEPAD) "Pad: Direct" else "Pad: KBM"
+                                } else {
+                                    "Configure Pad"
+                                },
+                                color = if (gamepadStatus.isConnected) CyberCyan else TextSecondary,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )

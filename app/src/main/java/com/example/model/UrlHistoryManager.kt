@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 
 class UrlHistoryManager(context: Context) {
     private val prefs: SharedPreferences =
-        context.getSharedPreferences("zeroplay_urls_pref", Context.MODE_PRIVATE)
+        context.getSharedPreferences("webcade_urls_pref", Context.MODE_PRIVATE)
 
     companion object {
         private const val KEY_HISTORY = "recent_urls"

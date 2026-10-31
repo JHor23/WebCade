@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/game_browser_icon_1793422317964"
+        android:drawable="@drawable/webcade_clean_logo_1793439316012"
         android:gravity="center" />
 </layer-list>

@@ -2,10 +2,10 @@ package com.example.gamepad
 
 import android.content.Context
 import android.hardware.input.InputManager
-import android.os.Build
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.webkit.WebView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,8 +26,17 @@ data class GamepadStatus(
 class GamepadManager(private val context: Context) : InputManager.InputDeviceListener {
 
     private val inputManager = context.getSystemService(Context.INPUT_SERVICE) as? InputManager
+    private val configManager = GamepadConfigManager(context)
+    val emulationEngine = GamepadEmulationEngine()
+
     private val _gamepadStatus = MutableStateFlow(GamepadStatus())
     val gamepadStatus: StateFlow<GamepadStatus> = _gamepadStatus.asStateFlow()
+
+    private val _controllerMode = MutableStateFlow(configManager.getControllerMode())
+    val controllerMode: StateFlow<ControllerMode> = _controllerMode.asStateFlow()
+
+    private val _controllerMapping = MutableStateFlow(configManager.getMapping())
+    val controllerMapping: StateFlow<ControllerMapping> = _controllerMapping.asStateFlow()
 
     private var isSelectPressed = false
     private var isStartPressed = false
@@ -35,11 +44,34 @@ class GamepadManager(private val context: Context) : InputManager.InputDeviceLis
 
     init {
         inputManager?.registerInputDeviceListener(this, null)
+        emulationEngine.controllerMode = _controllerMode.value
+        emulationEngine.mapping = _controllerMapping.value
         refreshConnectedControllers()
+    }
+
+    fun attachWebView(webView: WebView) {
+        emulationEngine.attachWebView(webView)
+    }
+
+    fun updateScreenDimensions(width: Float, height: Float) {
+        emulationEngine.updateScreenDimensions(width, height)
+    }
+
+    fun setControllerMode(mode: ControllerMode) {
+        _controllerMode.value = mode
+        emulationEngine.controllerMode = mode
+        configManager.setControllerMode(mode)
+    }
+
+    fun setMapping(mapping: ControllerMapping) {
+        _controllerMapping.value = mapping
+        emulationEngine.mapping = mapping
+        configManager.saveMapping(mapping)
     }
 
     fun cleanup() {
         inputManager?.unregisterInputDeviceListener(this)
+        emulationEngine.stopTicker()
     }
 
     override fun onInputDeviceAdded(deviceId: Int) {
@@ -86,7 +118,7 @@ class GamepadManager(private val context: Context) : InputManager.InputDeviceLis
 
     /**
      * Inspects KeyEvent from the controller.
-     * Returns true if the event was consumed (e.g., hotkey pressed).
+     * Returns true if the event was consumed (e.g., hotkey pressed or key/mouse emulated).
      */
     fun handleKeyEvent(event: KeyEvent, onToggleGameMenu: () -> Unit): Boolean {
         val keyCode = event.keyCode
@@ -100,7 +132,7 @@ class GamepadManager(private val context: Context) : InputManager.InputDeviceLis
             isStartPressed = isDown
         }
 
-        // Combo: Select + Start together toggles Game Menu
+        // Combo: Select + Start together toggles Game Menu in both modes
         if (isSelectPressed && isStartPressed) {
             if (!isMenuHotkeyTriggered && isDown) {
                 isMenuHotkeyTriggered = true
@@ -116,6 +148,12 @@ class GamepadManager(private val context: Context) : InputManager.InputDeviceLis
             if (buttonName.isNotEmpty()) {
                 _gamepadStatus.value = _gamepadStatus.value.copy(lastButtonPressed = buttonName)
             }
+        }
+
+        // If in Keyboard & Mouse Emulation Mode, emulate keys and clicks
+        if (_controllerMode.value == ControllerMode.KEYBOARD_MOUSE_EMULATION) {
+            val consumed = emulationEngine.handleKeyEvent(keyCode, isDown)
+            if (consumed) return true
         }
 
         return false
@@ -140,6 +178,12 @@ class GamepadManager(private val context: Context) : InputManager.InputDeviceLis
                 leftTrigger = lt,
                 rightTrigger = rt
             )
+
+            // Pass to emulation engine for mouse aiming and WASD movement
+            if (_controllerMode.value == ControllerMode.KEYBOARD_MOUSE_EMULATION) {
+                emulationEngine.handleThumbsticks(lx, ly, rx, ry)
+                emulationEngine.handleTriggerChange(lt, rt)
+            }
         }
         return false
     }

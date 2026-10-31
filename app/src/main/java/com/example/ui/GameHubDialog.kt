@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadStatus
 import com.example.model.GamingPlatform
 import com.example.model.GamingPresets
@@ -102,7 +104,9 @@ fun GameHubDialog(
     onGoForward: () -> Unit,
     onClearCache: () -> Unit,
     onRequestPointerCapture: () -> Unit,
-    onGoToHome: () -> Unit
+    onGoToHome: () -> Unit,
+    controllerMode: ControllerMode = ControllerMode.DEDICATED_GAMEPAD,
+    onOpenControllerMapping: () -> Unit = {}
 ) {
     var customUrlInput by remember { mutableStateOf(currentUrl) }
     val clipboardManager = LocalClipboardManager.current
@@ -168,7 +172,7 @@ fun GameHubDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.SportsEsports,
-                                    contentDescription = "ZeroPlay Icon",
+                                    contentDescription = "WebCade Icon",
                                     tint = CyberCyan,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -615,31 +619,73 @@ fun GameHubDialog(
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Row(
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        .padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(
-                                                if (gamepadStatus.isConnected) NeonGreen else TextMuted,
-                                                CircleShape
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(
+                                                        if (gamepadStatus.isConnected) NeonGreen else TextMuted,
+                                                        CircleShape
+                                                    )
                                             )
-                                    )
-                                    Text(
-                                        text = if (gamepadStatus.isConnected) {
-                                            "Controller: ${gamepadStatus.deviceName}"
-                                        } else {
-                                            "No Physical Controller Connected (Bluetooth / USB)"
-                                        },
-                                        color = TextPrimary,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                            Text(
+                                                text = if (gamepadStatus.isConnected) {
+                                                    "Controller: ${gamepadStatus.deviceName}"
+                                                } else {
+                                                    "No Physical Controller Connected"
+                                                },
+                                                color = TextPrimary,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+
+                                        Text(
+                                            text = if (controllerMode == ControllerMode.DEDICATED_GAMEPAD) "Dedicated Gamepad" else "KBM Emulation",
+                                            color = if (controllerMode == ControllerMode.KEYBOARD_MOUSE_EMULATION) NeonPurple else CyberCyan,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+
+                                    Button(
+                                        onClick = onOpenControllerMapping,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(36.dp)
+                                            .testTag("open_controller_mapping_btn"),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Tune,
+                                            contentDescription = "Configure",
+                                            tint = CyberCyan,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "CONFIGURE KEY & MOUSE MAPPING / MODE",
+                                            color = TextPrimary,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }

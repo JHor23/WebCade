@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,15 +19,18 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadStatus
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.NeonGreen
+import com.example.ui.theme.NeonPurple
 
 @Composable
 fun PerformanceHud(
     gamepadStatus: GamepadStatus,
     userAgentMode: UserAgentMode,
+    controllerMode: ControllerMode = ControllerMode.DEDICATED_GAMEPAD,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -53,7 +55,7 @@ fun PerformanceHud(
                         .background(NeonGreen, CircleShape)
                 )
                 Text(
-                    text = "HW ACCEL ON",
+                    text = "HW ON",
                     color = NeonGreen,
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
@@ -61,16 +63,17 @@ fun PerformanceHud(
                 )
             }
 
-            // Controller
+            // Controller & Mode
             Text(
                 text = if (gamepadStatus.isConnected) {
-                    "🎮 ${gamepadStatus.deviceName.take(20)}"
+                    if (controllerMode == ControllerMode.DEDICATED_GAMEPAD) "🎮 Pad: Direct" else "⌨️🖱️ Pad: KBM Emulation"
                 } else {
                     "🕹️ Touch Virtual Pad"
                 },
-                color = Color.White,
+                color = if (controllerMode == ControllerMode.KEYBOARD_MOUSE_EMULATION) NeonPurple else Color.White,
                 fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
             )
 
             // Last Pressed or Stick
