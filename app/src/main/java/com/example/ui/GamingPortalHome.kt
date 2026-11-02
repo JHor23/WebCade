@@ -6,11 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,6 +57,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gamepad.ControllerMode
@@ -116,10 +119,10 @@ fun GamingPortalHome(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header: Title & Controller Status
+            // Header: Title & Controller Status (compact and integrated, no empty void)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -128,11 +131,12 @@ fun GamingPortalHome(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.weight(1f, fill = false)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(40.dp)
                                 .background(CyberCyan.copy(alpha = 0.15f), CircleShape)
                                 .border(1.5.dp, CyberCyan, CircleShape),
                             contentAlignment = Alignment.Center
@@ -144,22 +148,28 @@ fun GamingPortalHome(
                                 modifier = Modifier.size(22.dp)
                             )
                         }
-                        Column {
+                        Column(modifier = Modifier.weight(1f, fill = false)) {
                             Text(
                                 text = "WebCade Gaming Browser",
                                 color = TextPrimary,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Black
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "Full Screen • Low Latency • HW Acceleration",
                                 color = CyberCyan,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
                                 fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     // Controller status pill (clickable to configure mapping)
                     Surface(
@@ -194,7 +204,8 @@ fun GamingPortalHome(
                                 },
                                 color = if (gamepadStatus.isConnected) CyberCyan else TextSecondary,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
                             )
                         }
                     }
@@ -212,8 +223,8 @@ fun GamingPortalHome(
                     border = androidx.compose.foundation.BorderStroke(1.5.dp, CyberCyan)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -246,7 +257,9 @@ fun GamingPortalHome(
                                 Text(
                                     "Enter game URL (e.g. krunker.io, xbox.com/play)",
                                     color = TextMuted,
-                                    fontSize = 13.sp
+                                    fontSize = 13.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             },
                             trailingIcon = {
@@ -281,7 +294,8 @@ fun GamingPortalHome(
                         // Action Buttons: Paste from Clipboard & Launch
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Button(
                                 onClick = {
@@ -291,47 +305,57 @@ fun GamingPortalHome(
                                     }
                                 },
                                 modifier = Modifier
-                                    .height(48.dp)
+                                    .heightIn(min = 48.dp)
                                     .testTag("paste_url_btn"),
                                 shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ContentPaste,
                                     contentDescription = "Paste",
                                     tint = CyberCyan,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("PASTE", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "PASTE",
+                                    color = TextPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1
+                                )
                             }
 
                             Button(
                                 onClick = { submitUrl(urlInput) },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(48.dp)
+                                    .heightIn(min = 48.dp)
                                     .testTag("launch_game_fullscreen_btn"),
                                 shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = "Launch Game",
                                     tint = DarkBackground,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "LAUNCH IN FULL SCREEN",
+                                    text = "LAUNCH FULLSCREEN",
                                     color = DarkBackground,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Black,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
 
-                        // User-Agent Selector Bar
+                        // User-Agent Selector Bar (uses LazyRow so "Mobile" never wraps vertically)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -341,33 +365,41 @@ fun GamingPortalHome(
                                 text = "UA Mode:",
                                 color = TextSecondary,
                                 fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.SemiBold
                             )
-                            UserAgentMode.values().forEach { mode ->
-                                val isSelected = selectedUserAgent == mode
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { onUserAgentChanged(mode) },
-                                    label = {
-                                        Text(
-                                            text = when (mode) {
-                                                UserAgentMode.DESKTOP_CHROME -> "Desktop (Win 11)"
-                                                UserAgentMode.CHROME_OS -> "ChromeOS"
-                                                UserAgentMode.MOBILE -> "Mobile"
-                                            },
-                                            fontSize = 10.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = NeonPurple,
-                                        selectedLabelColor = Color.White,
-                                        containerColor = DarkSurfaceElevated,
-                                        labelColor = TextSecondary
-                                    ),
-                                    shape = RoundedCornerShape(6.dp),
-                                    modifier = Modifier.testTag("portal_ua_${mode.name.lowercase()}")
-                                )
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                items(UserAgentMode.values()) { mode ->
+                                    val isSelected = selectedUserAgent == mode
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { onUserAgentChanged(mode) },
+                                        label = {
+                                            Text(
+                                                text = when (mode) {
+                                                    UserAgentMode.DESKTOP_CHROME -> "Desktop (Win 11)"
+                                                    UserAgentMode.CHROME_OS -> "ChromeOS"
+                                                    UserAgentMode.MOBILE -> "Mobile"
+                                                },
+                                                fontSize = 11.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = NeonPurple,
+                                            selectedLabelColor = Color.White,
+                                            containerColor = DarkSurfaceElevated,
+                                            labelColor = TextSecondary
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.testTag("portal_ua_${mode.name.lowercase()}")
+                                    )
+                                }
                             }
                         }
                     }
@@ -446,12 +478,12 @@ fun GamingPortalHome(
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Category filters
-                    Row(
+                    // Category filters (uses LazyRow so "Diagnostics" never wraps vertically)
+                    LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        categories.forEach { category ->
+                        items(categories) { category ->
                             val isSelected = selectedCategory == category
                             FilterChip(
                                 selected = isSelected,
@@ -459,8 +491,10 @@ fun GamingPortalHome(
                                 label = {
                                     Text(
                                         text = category,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
@@ -469,12 +503,13 @@ fun GamingPortalHome(
                                     containerColor = DarkSurfaceElevated,
                                     labelColor = TextSecondary
                                 ),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.testTag("portal_category_${category.lowercase().replace(" ", "_")}")
                             )
                         }
                     }
 
-                    // Grid of Gaming Platforms
+                    // Grid of Gaming Platforms with consistent heights and clear typography
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         filteredPlatforms.chunked(2).forEach { rowPlatforms ->
                             Row(
@@ -492,9 +527,12 @@ fun GamingPortalHome(
                                         border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(12.dp),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
                                             verticalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
+                                            // Row 1: Emoji + Name + Launch Arrow
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -502,26 +540,20 @@ fun GamingPortalHome(
                                             ) {
                                                 Row(
                                                     verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                                                     modifier = Modifier.weight(1f)
                                                 ) {
-                                                    Text(text = platform.iconEmoji, fontSize = 22.sp)
-                                                    Column {
-                                                        Text(
-                                                            text = platform.name,
-                                                            color = TextPrimary,
-                                                            fontSize = 12.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            maxLines = 1
-                                                        )
-                                                        Text(
-                                                            text = platform.tag,
-                                                            color = CyberCyan,
-                                                            fontSize = 10.sp,
-                                                            fontFamily = FontFamily.Monospace
-                                                        )
-                                                    }
+                                                    Text(text = platform.iconEmoji, fontSize = 20.sp)
+                                                    Text(
+                                                        text = platform.name,
+                                                        color = TextPrimary,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
                                                 }
+                                                Spacer(modifier = Modifier.width(4.dp))
                                                 Icon(
                                                     imageVector = Icons.Default.PlayArrow,
                                                     contentDescription = "Launch",
@@ -529,12 +561,27 @@ fun GamingPortalHome(
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                             }
+
+                                            // Row 2: Tag
+                                            Text(
+                                                text = platform.tag,
+                                                color = CyberCyan,
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+
+                                            // Row 3: Description with uniform 2-line height
                                             Text(
                                                 text = platform.description,
                                                 color = TextSecondary,
                                                 fontSize = 11.sp,
                                                 maxLines = 2,
-                                                lineHeight = 14.sp
+                                                minLines = 2,
+                                                lineHeight = 14.sp,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
                                     }

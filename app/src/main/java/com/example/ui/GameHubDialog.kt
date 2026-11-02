@@ -445,11 +445,11 @@ fun GameHubDialog(
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
-                            Row(
+                            LazyRow(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                UserAgentMode.values().forEach { mode ->
+                                items(UserAgentMode.values()) { mode ->
                                     val isSelected = userAgentMode == mode
                                     FilterChip(
                                         selected = isSelected,
@@ -462,7 +462,9 @@ fun GameHubDialog(
                                                     UserAgentMode.MOBILE -> "Mobile"
                                                 },
                                                 fontSize = 11.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         },
                                         colors = FilterChipDefaults.filterChipColors(
