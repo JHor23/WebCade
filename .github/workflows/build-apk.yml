@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ] # Change to "master" if your default branch is named master
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -21,7 +21,14 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
-    # This replaces the old ./gradlew command with the system's global gradle command
+    # ADD THIS STEP BELOW TO AUTOMATICALLY GENERATE THE MISSING KEYSTORE
+    - name: Generate Default Debug Keystore
+      run: |
+        mkdir -p ~/.android
+        keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        cp ~/.android/debug.keystore ./debug.keystore
+
+    # This runs the global system build
     - name: Build Debug APK
       run: gradle assembleDebug
 
