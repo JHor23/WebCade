@@ -112,5 +112,16 @@ class ExampleRobolectricTest {
 
     gamepadManager.cleanup()
   }
+
+  @Test
+  fun `test GamingPresets platforms list is populated with gaming services`() {
+    val platforms = com.example.model.GamingPresets.platforms
+    assertTrue(platforms.isNotEmpty())
+    assertTrue(platforms.any { it.id == "xbox" })
+    assertTrue(platforms.any { it.id == "gfn" })
+    assertTrue(platforms.any { it.id == "luna" })
+    assertTrue(platforms.any { it.id == "krunker" })
+    assertTrue(platforms.any { it.id == "crazygames" })
+  }
 }
 

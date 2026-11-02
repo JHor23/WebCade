@@ -221,12 +221,12 @@ fun GamingPortalHome(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Language,
-                                contentDescription = "URL Icon",
+                                contentDescription = "URL Bar Icon",
                                 tint = CyberCyan,
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
-                                text = "INPUT GAMING WEBSITE URL",
+                                text = "GAMING URL BAR",
                                 color = CyberCyan,
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
@@ -435,11 +435,11 @@ fun GamingPortalHome(
                 }
             }
 
-            // Featured Gaming Websites / Presets Section
+            // All Gaming Services Section
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "PRESET GAMING WEBSITES & CLOUD PLATFORMS",
+                        text = "ALL GAMING SERVICES & PLATFORMS",
                         color = CyberCyan,
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
@@ -496,25 +496,38 @@ fun GamingPortalHome(
                                             verticalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Row(
+                                                modifier = Modifier.fillMaxWidth(),
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
-                                                Text(text = platform.iconEmoji, fontSize = 22.sp)
-                                                Column {
-                                                    Text(
-                                                        text = platform.name,
-                                                        color = TextPrimary,
-                                                        fontSize = 12.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        maxLines = 1
-                                                    )
-                                                    Text(
-                                                        text = platform.tag,
-                                                        color = CyberCyan,
-                                                        fontSize = 10.sp,
-                                                        fontFamily = FontFamily.Monospace
-                                                    )
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text(text = platform.iconEmoji, fontSize = 22.sp)
+                                                    Column {
+                                                        Text(
+                                                            text = platform.name,
+                                                            color = TextPrimary,
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            maxLines = 1
+                                                        )
+                                                        Text(
+                                                            text = platform.tag,
+                                                            color = CyberCyan,
+                                                            fontSize = 10.sp,
+                                                            fontFamily = FontFamily.Monospace
+                                                        )
+                                                    }
                                                 }
+                                                Icon(
+                                                    imageVector = Icons.Default.PlayArrow,
+                                                    contentDescription = "Launch",
+                                                    tint = CyberCyan,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
                                             }
                                             Text(
                                                 text = platform.description,

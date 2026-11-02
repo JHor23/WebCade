@@ -60,7 +60,7 @@ fun GamingBrowserScreen(
     var currentUrl by remember {
         mutableStateOf(urlHistoryManager.getLastUrl() ?: GamingPresets.platforms[0].url)
     }
-    var isAtHomePortal by remember { mutableStateOf(false) }
+    var isAtHomePortal by remember { mutableStateOf(true) }
     var userAgentMode by remember { mutableStateOf(UserAgentMode.DESKTOP_CHROME) }
     var isUrlBarVisible by remember { mutableStateOf(false) }
     var isHubOpen by remember { mutableStateOf(false) }
@@ -115,20 +115,16 @@ fun GamingBrowserScreen(
         onMenuDismissed()
     }
 
-    // Intercept back: dismiss URL Bar first, then Hub, then history
-    BackHandler(enabled = true) {
+    // Intercept back: dismiss URL Bar first, then Hub, then history, then return to Home Portal
+    BackHandler(enabled = isUrlBarVisible || isHubOpen || !isAtHomePortal || webState.canGoBack) {
         if (isUrlBarVisible) {
             dismissUrlBar()
         } else if (isHubOpen) {
             isHubOpen = false
-        } else if (isAtHomePortal) {
-            if (currentUrl.isNotEmpty()) {
-                isAtHomePortal = false
-            }
         } else if (webState.canGoBack) {
             webViewInstance?.goBack()
-        } else {
-            isUrlBarVisible = true
+        } else if (!isAtHomePortal) {
+            isAtHomePortal = true
         }
     }
 
@@ -236,6 +232,10 @@ fun GamingBrowserScreen(
                 onOpenFullHub = {
                     dismissUrlBar()
                     isHubOpen = true
+                },
+                onGoToHome = {
+                    dismissUrlBar()
+                    isAtHomePortal = true
                 },
                 modifier = Modifier.align(Alignment.TopCenter)
             )

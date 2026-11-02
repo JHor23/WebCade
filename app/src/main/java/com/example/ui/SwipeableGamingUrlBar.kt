@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
@@ -93,6 +94,7 @@ fun SwipeableGamingUrlBar(
     onGoBack: () -> Unit,
     onGoForward: () -> Unit,
     onOpenFullHub: () -> Unit,
+    onGoToHome: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var urlInputText by remember { mutableStateOf(currentUrl) }
@@ -276,6 +278,25 @@ fun SwipeableGamingUrlBar(
                             color = DarkBackground,
                             fontWeight = FontWeight.Black,
                             fontSize = 12.sp
+                        )
+                    }
+
+                    // Home Portal icon button
+                    IconButton(
+                        onClick = {
+                            onDismissUrlBar()
+                            onGoToHome()
+                        },
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(DarkSurfaceElevated, RoundedCornerShape(8.dp))
+                            .testTag("url_bar_home_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            contentDescription = "Home Startup Page",
+                            tint = CyberCyan,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
