@@ -31,12 +31,14 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -95,6 +97,9 @@ fun SwipeableGamingUrlBar(
     onGoForward: () -> Unit,
     onOpenFullHub: () -> Unit,
     onGoToHome: () -> Unit = {},
+    isAdBlockerEnabled: Boolean = true,
+    onToggleAdBlocker: () -> Unit = {},
+    onClearBrowserData: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var urlInputText by remember { mutableStateOf(currentUrl) }
@@ -278,6 +283,47 @@ fun SwipeableGamingUrlBar(
                             color = DarkBackground,
                             fontWeight = FontWeight.Black,
                             fontSize = 12.sp
+                        )
+                    }
+
+                    // Ad-Blocker DNS Filter icon button
+                    IconButton(
+                        onClick = onToggleAdBlocker,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(
+                                if (isAdBlockerEnabled) CyberCyan.copy(alpha = 0.2f) else DarkSurfaceElevated,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .border(
+                                1.dp,
+                                if (isAdBlockerEnabled) CyberCyan else DarkBorder,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .testTag("url_bar_adblock_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = if (isAdBlockerEnabled) "Ad-Blocker DNS ON" else "Ad-Blocker DNS OFF",
+                            tint = if (isAdBlockerEnabled) CyberCyan else TextMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Trash can icon button (Clear cache & cookies)
+                    IconButton(
+                        onClick = onClearBrowserData,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(DarkSurfaceElevated, RoundedCornerShape(8.dp))
+                            .border(1.dp, DarkBorder, RoundedCornerShape(8.dp))
+                            .testTag("url_bar_trash_clear_data_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteSweep,
+                            contentDescription = "Clear Cache & Cookies",
+                            tint = NeonPink,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 

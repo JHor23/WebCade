@@ -34,6 +34,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.Toast
+import com.example.browser.AdBlockManager
+import com.example.browser.BrowserDataManager
 import com.example.browser.GamingWebClient
 import com.example.browser.GamingWebViewContainer
 import com.example.browser.VirtualGamepadBridge
@@ -67,6 +70,11 @@ fun GamingBrowserScreen(
     var isVirtualGamepadEnabled by remember { mutableStateOf(false) }
     var isPerformanceHudEnabled by remember { mutableStateOf(false) }
     var isMappingDialogOpen by remember { mutableStateOf(false) }
+    var isClearDataDialogOpen by remember { mutableStateOf(false) }
+
+    val adBlockManager = remember { AdBlockManager(context) }
+    val isAdBlockerEnabled by adBlockManager.isAdBlockerEnabled.collectAsState()
+    val blockedAdsCount by adBlockManager.blockedAdsCount.collectAsState()
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var customFullscreenView by remember { mutableStateOf<View?>(null) }
@@ -78,6 +86,7 @@ fun GamingBrowserScreen(
 
     val gamingWebClient = remember {
         GamingWebClient(
+            adBlockManager = adBlockManager,
             onCustomViewChanged = { view, _ ->
                 customFullscreenView = view
             }
@@ -85,6 +94,40 @@ fun GamingBrowserScreen(
     }
 
     val webState by gamingWebClient.webState.collectAsState()
+
+    fun toggleAdBlocker() {
+        val enabled = adBlockManager.toggleAdBlocker()
+        val msg = if (enabled) {
+            "Ad-Blocker DNS Filtering: ON (Blocking ads & trackers)"
+        } else {
+            "Ad-Blocker DNS Filtering: OFF"
+        }
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        if (!isAtHomePortal) {
+            webViewInstance?.reload()
+        }
+    }
+
+    fun handleClearBrowserData(clearHistory: Boolean) {
+        BrowserDataManager.clearAllBrowserData(
+            context = context,
+            webView = webViewInstance,
+            clearHistory = clearHistory,
+            onComplete = {
+                if (clearHistory) {
+                    recentUrls = urlHistoryManager.getRecentUrls()
+                }
+                Toast.makeText(
+                    context,
+                    "All cache, cookies & browser data cleared",
+                    Toast.LENGTH_SHORT
+                ).show()
+                if (!isAtHomePortal) {
+                    webViewInstance?.reload()
+                }
+            }
+        )
+    }
 
     // Listen for top swipe-down from MainActivity (non-blocking)
     LaunchedEffect(isUrlBarRequestedFromSwipe) {
@@ -115,9 +158,11 @@ fun GamingBrowserScreen(
         onMenuDismissed()
     }
 
-    // Intercept back: dismiss URL Bar first, then Hub, then history, then return to Home Portal
-    BackHandler(enabled = isUrlBarVisible || isHubOpen || !isAtHomePortal || webState.canGoBack) {
-        if (isUrlBarVisible) {
+    // Intercept back: dismiss dialogs, URL Bar, Hub, history, then return to Home Portal
+    BackHandler(enabled = isClearDataDialogOpen || isUrlBarVisible || isHubOpen || !isAtHomePortal || webState.canGoBack) {
+        if (isClearDataDialogOpen) {
+            isClearDataDialogOpen = false
+        } else if (isUrlBarVisible) {
             dismissUrlBar()
         } else if (isHubOpen) {
             isHubOpen = false
@@ -140,6 +185,10 @@ fun GamingBrowserScreen(
             },
             controllerMode = controllerMode,
             onOpenControllerMapping = { isMappingDialogOpen = true },
+            isAdBlockerEnabled = isAdBlockerEnabled,
+            blockedAdsCount = blockedAdsCount,
+            onToggleAdBlocker = { toggleAdBlocker() },
+            onClearBrowserData = { isClearDataDialogOpen = true },
             modifier = modifier
         )
     } else {
@@ -237,6 +286,9 @@ fun GamingBrowserScreen(
                     dismissUrlBar()
                     isAtHomePortal = true
                 },
+                isAdBlockerEnabled = isAdBlockerEnabled,
+                onToggleAdBlocker = { toggleAdBlocker() },
+                onClearBrowserData = { isClearDataDialogOpen = true },
                 modifier = Modifier.align(Alignment.TopCenter)
             )
 
@@ -311,16 +363,17 @@ fun GamingBrowserScreen(
                         }
                     },
                     onClearCache = {
-                        webViewInstance?.clearCache(true)
-                        CookieManager.getInstance().removeAllCookies(null)
-                        webViewInstance?.reload()
+                        isClearDataDialogOpen = true
                     },
                     onRequestPointerCapture = {
                         webViewInstance?.requestPointerCapture()
                     },
                     onGoToHome = {
                         isAtHomePortal = true
-                    }
+                    },
+                    isAdBlockerEnabled = isAdBlockerEnabled,
+                    blockedAdsCount = blockedAdsCount,
+                    onToggleAdBlocker = { toggleAdBlocker() }
                 )
             }
         }
@@ -338,6 +391,16 @@ fun GamingBrowserScreen(
             },
             onMappingChanged = { newMapping ->
                 gamepadManager.setMapping(newMapping)
+            }
+        )
+    }
+
+    // 10. Clear Cache, Cookies & Browser Data Dialog
+    if (isClearDataDialogOpen) {
+        ClearBrowserDataDialog(
+            onDismiss = { isClearDataDialogOpen = false },
+            onConfirmClear = { clearHistory ->
+                handleClearBrowserData(clearHistory)
             }
         )
     }

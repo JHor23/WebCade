@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
@@ -104,9 +105,12 @@ fun GameHubDialog(
     onGoForward: () -> Unit,
     onClearCache: () -> Unit,
     onRequestPointerCapture: () -> Unit,
-    onGoToHome: () -> Unit,
+    onGoToHome: () -> Unit = {},
     controllerMode: ControllerMode = ControllerMode.DEDICATED_GAMEPAD,
-    onOpenControllerMapping: () -> Unit = {}
+    onOpenControllerMapping: () -> Unit = {},
+    isAdBlockerEnabled: Boolean = true,
+    blockedAdsCount: Int = 0,
+    onToggleAdBlocker: (Boolean) -> Unit = {}
 ) {
     var customUrlInput by remember { mutableStateOf(currentUrl) }
     val clipboardManager = LocalClipboardManager.current
@@ -608,6 +612,57 @@ fun GameHubDialog(
                                             uncheckedTrackColor = DarkBackground
                                         ),
                                         modifier = Modifier.testTag("toggle_performance_hud")
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = "Ad-Blocker DNS Filtering",
+                                                color = TextPrimary,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            if (blockedAdsCount > 0) {
+                                                Surface(
+                                                    color = CyberCyan.copy(alpha = 0.2f),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "$blockedAdsCount blocked",
+                                                        color = CyberCyan,
+                                                        fontSize = 9.sp,
+                                                        fontFamily = FontFamily.Monospace,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Text(
+                                            text = "DNS sinkhole & popup blocker for gaming",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                    Switch(
+                                        checked = isAdBlockerEnabled,
+                                        onCheckedChange = onToggleAdBlocker,
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = CyberCyan,
+                                            checkedTrackColor = CyberCyan.copy(alpha = 0.3f),
+                                            uncheckedThumbColor = TextMuted,
+                                            uncheckedTrackColor = DarkBackground
+                                        ),
+                                        modifier = Modifier.testTag("toggle_adblocker_dns")
                                     )
                                 }
                             }

@@ -26,10 +26,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -70,6 +72,7 @@ import com.example.ui.theme.DarkBorder
 import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.DarkSurfaceElevated
 import com.example.ui.theme.NeonGreen
+import com.example.ui.theme.NeonPink
 import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
@@ -84,6 +87,10 @@ fun GamingPortalHome(
     onLaunchUrl: (url: String, ua: UserAgentMode) -> Unit,
     controllerMode: ControllerMode = ControllerMode.DEDICATED_GAMEPAD,
     onOpenControllerMapping: () -> Unit = {},
+    isAdBlockerEnabled: Boolean = true,
+    blockedAdsCount: Int = 0,
+    onToggleAdBlocker: () -> Unit = {},
+    onClearBrowserData: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var urlInput by remember { mutableStateOf("") }
@@ -227,22 +234,96 @@ fun GamingPortalHome(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Language,
-                                contentDescription = "URL Bar Icon",
-                                tint = CyberCyan,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "GAMING URL BAR",
-                                color = CyberCyan,
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Language,
+                                    contentDescription = "URL Bar Icon",
+                                    tint = CyberCyan,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                                Text(
+                                    text = "GAMING URL BAR",
+                                    color = CyberCyan,
+                                    fontSize = 12.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                // Ad-Blocker DNS Filtering Toggle
+                                Surface(
+                                    color = if (isAdBlockerEnabled) CyberCyan.copy(alpha = 0.15f) else DarkSurfaceElevated,
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (isAdBlockerEnabled) CyberCyan else DarkBorder
+                                    ),
+                                    modifier = Modifier
+                                        .clickable { onToggleAdBlocker() }
+                                        .testTag("portal_adblock_toggle_btn")
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Shield,
+                                            contentDescription = "Ad-Blocker DNS Filtering",
+                                            tint = if (isAdBlockerEnabled) CyberCyan else TextMuted,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = if (isAdBlockerEnabled) "Ad-Block DNS" else "DNS Off",
+                                            color = if (isAdBlockerEnabled) CyberCyan else TextMuted,
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                // Trash Can Icon: Clears Cache, Cookies & Browser Data
+                                Surface(
+                                    color = DarkSurfaceElevated,
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+                                    modifier = Modifier
+                                        .clickable { onClearBrowserData() }
+                                        .testTag("portal_clear_cache_cookies_btn")
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteSweep,
+                                            contentDescription = "Clear Cache and Cookies",
+                                            tint = NeonPink,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = "Clear Data",
+                                            color = TextSecondary,
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         // Text Field with Go action

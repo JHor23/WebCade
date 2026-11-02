@@ -123,5 +123,56 @@ class ExampleRobolectricTest {
     assertTrue(platforms.any { it.id == "krunker" })
     assertTrue(platforms.any { it.id == "crazygames" })
   }
+
+  @Test
+  fun `test AdBlockManager blocks ad and tracker domains while allowing games`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val adBlockManager = com.example.browser.AdBlockManager(context)
+
+    // Ensure ad-block is enabled
+    adBlockManager.setAdBlockerEnabled(true)
+    assertTrue(adBlockManager.isAdBlockerEnabled.value)
+
+    // Should block known ad domains
+    val adUri1 = android.net.Uri.parse("https://adservice.google.com/ads/pagead")
+    val adUri2 = android.net.Uri.parse("https://securepubads.g.doubleclick.net/gampad/ads")
+    val adUri3 = android.net.Uri.parse("https://c.amazon-adsystem.com/aax2/apstag.js")
+    val adUri4 = android.net.Uri.parse("https://popads.net/serve")
+
+    assertTrue(adBlockManager.shouldBlock(adUri1))
+    assertTrue(adBlockManager.shouldBlock(adUri2))
+    assertTrue(adBlockManager.shouldBlock(adUri3))
+    assertTrue(adBlockManager.shouldBlock(adUri4))
+
+    // Should allow essential gaming streaming platforms
+    val gameUri1 = android.net.Uri.parse("https://www.xbox.com/play")
+    val gameUri2 = android.net.Uri.parse("https://play.geforcenow.com/mall/")
+    val gameUri3 = android.net.Uri.parse("https://krunker.io/")
+    val gameUri4 = android.net.Uri.parse("https://www.crazygames.com/game/1v1-lol")
+
+    assertFalse(adBlockManager.shouldBlock(gameUri1))
+    assertFalse(adBlockManager.shouldBlock(gameUri2))
+    assertFalse(adBlockManager.shouldBlock(gameUri3))
+    assertFalse(adBlockManager.shouldBlock(gameUri4))
+
+    // Toggling ad-block off should allow requests through
+    adBlockManager.setAdBlockerEnabled(false)
+    assertFalse(adBlockManager.shouldBlock(adUri1))
+  }
+
+  @Test
+  fun `test BrowserDataManager clearAllBrowserData executes cleanly`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    var completed = false
+    com.example.browser.BrowserDataManager.clearAllBrowserData(
+      context = context,
+      webView = null,
+      clearHistory = true,
+      onComplete = { completed = true }
+    )
+    // Run looper tasks
+    org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+    assertTrue(completed)
+  }
 }
 

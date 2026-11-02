@@ -10,6 +10,8 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceResponse
+import java.io.ByteArrayInputStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +28,7 @@ data class WebState(
 )
 
 class GamingWebClient(
+    val adBlockManager: AdBlockManager,
     private val onCustomViewChanged: (View?, WebChromeClient.CustomViewCallback?) -> Unit
 ) {
     private val _webState = MutableStateFlow(WebState())
@@ -56,6 +59,25 @@ class GamingWebClient(
             view?.evaluateJavascript(VirtualGamepadBridge.INJECTION_SCRIPT, null)
             // Inject keyboard & mouse emulation bridge into DOM
             view?.evaluateJavascript(com.example.gamepad.GamepadEmulationEngine.KBM_INJECTION_SCRIPT, null)
+            // Inject ad-blocker cosmetic rule when ad-blocker is enabled
+            if (adBlockManager.isAdBlockerEnabled.value) {
+                view?.evaluateJavascript(AdBlockManager.COSMETIC_AD_BLOCK_SCRIPT, null)
+            }
+        }
+
+        override fun shouldInterceptRequest(
+            view: WebView?,
+            request: WebResourceRequest?
+        ): WebResourceResponse? {
+            val uri = request?.url ?: return null
+            if (adBlockManager.shouldBlock(uri)) {
+                return WebResourceResponse(
+                    "text/plain",
+                    "UTF-8",
+                    ByteArrayInputStream(ByteArray(0))
+                )
+            }
+            return super.shouldInterceptRequest(view, request)
         }
 
         override fun onReceivedError(
