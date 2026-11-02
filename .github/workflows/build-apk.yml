@@ -1,16 +1,20 @@
-name: Build Android APK
+name: Build and Release WebCade APK
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Check out source
         uses: actions/checkout@v4
 
       - name: Set up Java 17
@@ -19,18 +23,53 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
 
-      - name: Install SDK packages
+      - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          yes | sdkmanager --licenses
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-36" \
+            "platforms;android-36-ext1" \
+            "build-tools;36.0.0"
 
-      - name: Build APK
-        run: ./gradlew :app:assembleDebug
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
 
-      - name: Upload APK
+      - name: Generate debug signing key
+        run: |
+          keytool -genkeypair -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build debug APK
+        run: gradle :app:assembleDebug
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WebCade-debug
+          name: WebCade-debug-${{ github.run_number }}
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${GITHUB_RUN_NUMBER}" app/build/outputs/apk/debug/*.apk \
+            --target "$GITHUB_SHA" \
+            --title "WebCade debug build ${GITHUB_RUN_NUMBER}" \
+            --notes "Automated debug APK built from commit ${GITHUB_SHA}."
