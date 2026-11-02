@@ -3,6 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -22,10 +23,18 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        shell: bash
+        run: |
+          export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
 
-      - name: Install Android SDK packages
-        run: sdkmanager "platforms;android-36" "platforms;android-36-ext1" "build-tools;36.0.0"
+          if [ ! -d "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" ]; then
+            echo "cmdline-tools/latest not found; trying cmdline-tools/16.0"
+            export PATH=$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin:$PATH
+          fi
+
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -45,7 +54,7 @@ jobs:
             -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug
+        run: ./gradlew :app:assembleDebug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
