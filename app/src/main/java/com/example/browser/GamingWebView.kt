@@ -8,12 +8,14 @@ import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.model.UserAgentMode
@@ -22,6 +24,7 @@ import com.example.model.UserAgentMode
 fun setupGamingWebSettings(webView: WebView, userAgentMode: UserAgentMode) {
     // Enable hardware acceleration at the view layer
     webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+    webView.setBackgroundColor(android.graphics.Color.BLACK)
     webView.isFocusable = true
     webView.isFocusableInTouchMode = true
     webView.overScrollMode = View.OVER_SCROLL_NEVER
@@ -69,15 +72,33 @@ fun GamingWebViewContainer(
 ) {
     val context = LocalContext.current
 
-    val webView = remember(context) {
+    // Retain WebView instance across orientation and configuration changes
+    val webView = remember {
         WebView(context).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
+            setBackgroundColor(android.graphics.Color.BLACK)
             webViewClient = gamingWebClient.webViewClient
             webChromeClient = gamingWebClient.webChromeClient
             setupGamingWebSettings(this, userAgentMode)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                addOnLayoutChangeListener { v, left, top, right, bottom, _, _, _, _ ->
+                    val w = right - left
+                    val h = bottom - top
+                    if (w > 0 && h > 0) {
+                        val density = v.context.resources.displayMetrics.density
+                        val exclusionHeight = (56 * density).toInt()
+                        v.systemGestureExclusionRects = listOf(
+                            android.graphics.Rect(0, 0, w, exclusionHeight)
+                        )
+                    }
+                }
+            }
+            if (currentUrl.isNotBlank()) {
+                loadUrl(currentUrl)
+            }
             onWebViewReady(this)
         }
     }
@@ -94,9 +115,9 @@ fun GamingWebViewContainer(
         }
     }
 
-    // React to URL changes
+    // React to URL changes (ensures page loads even if recreated or after back navigation)
     LaunchedEffect(currentUrl) {
-        if (currentUrl.isNotBlank() && webView.url != currentUrl) {
+        if (currentUrl.isNotBlank() && (webView.url == null || webView.url != currentUrl)) {
             webView.loadUrl(currentUrl)
         }
     }
@@ -110,6 +131,8 @@ fun GamingWebViewContainer(
 
     AndroidView(
         factory = { webView },
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black)
     )
 }

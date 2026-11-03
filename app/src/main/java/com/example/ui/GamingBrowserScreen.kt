@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,10 +61,10 @@ fun GamingBrowserScreen(
     val urlHistoryManager = remember { UrlHistoryManager(context) }
 
     var recentUrls by remember { mutableStateOf(urlHistoryManager.getRecentUrls()) }
-    var currentUrl by remember {
+    var currentUrl by rememberSaveable {
         mutableStateOf(urlHistoryManager.getLastUrl() ?: GamingPresets.platforms[0].url)
     }
-    var isAtHomePortal by remember { mutableStateOf(true) }
+    var isAtHomePortal by rememberSaveable { mutableStateOf(true) }
     var userAgentMode by remember { mutableStateOf(UserAgentMode.DESKTOP_CHROME) }
     var isUrlBarVisible by remember { mutableStateOf(false) }
     var isHubOpen by remember { mutableStateOf(false) }
@@ -152,24 +153,49 @@ fun GamingBrowserScreen(
         webViewInstance?.loadUrl(formatted)
     }
 
+    /**
+     * Safely handles back navigation.
+     * If the user is viewing a custom fullscreen view, it dismisses the view.
+     * If navigating back would land on about:blank, empty document, or root of history,
+     * it gracefully exits back to the Home Portal instead of crashing to a blank white screen.
+     */
+    fun navigateBackOrHome() {
+        if (customFullscreenView != null) {
+            gamingWebClient.hideCustomView()
+            return
+        }
+        val history = webViewInstance?.copyBackForwardList()
+        if (history != null && history.currentIndex > 0) {
+            val targetIndex = history.currentIndex - 1
+            val targetUrl = history.getItemAtIndex(targetIndex)?.url ?: ""
+            if (targetUrl.isBlank() || targetUrl == "about:blank" || targetUrl.startsWith("data:text/html")) {
+                dismissUrlBar()
+                isAtHomePortal = true
+            } else {
+                webViewInstance?.goBack()
+            }
+        } else {
+            dismissUrlBar()
+            isAtHomePortal = true
+        }
+    }
+
     // Handle gamepad hotkey to toggle hub
     if (isMenuRequestedFromGamepad && !isHubOpen) {
         isHubOpen = true
         onMenuDismissed()
     }
 
-    // Intercept back: dismiss dialogs, URL Bar, Hub, history, then return to Home Portal
-    BackHandler(enabled = isClearDataDialogOpen || isUrlBarVisible || isHubOpen || !isAtHomePortal || webState.canGoBack) {
+    // Intercept back: dismiss dialogs, URL Bar, Hub, or navigate back / return to Home Portal
+    BackHandler(enabled = isClearDataDialogOpen || isUrlBarVisible || isHubOpen || !isAtHomePortal) {
         if (isClearDataDialogOpen) {
             isClearDataDialogOpen = false
         } else if (isUrlBarVisible) {
             dismissUrlBar()
         } else if (isHubOpen) {
             isHubOpen = false
-        } else if (webState.canGoBack) {
-            webViewInstance?.goBack()
-        } else if (!isAtHomePortal) {
-            isAtHomePortal = true
+        } else {
+            navigateBackOrHome()
         }
     }
 
@@ -245,52 +271,55 @@ fun GamingBrowserScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 3.dp)
+                        .padding(top = 2.dp)
                         .width(36.dp)
                         .height(5.dp)
                         .alpha(0.3f)
                         .background(Color(0x99161E2E), RoundedCornerShape(3.dp))
                         .border(0.5.dp, Color(0x6600F2FE), RoundedCornerShape(3.dp))
-                        .clickable { isUrlBarVisible = true }
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null
+                        ) { isUrlBarVisible = true }
                         .testTag("stealth_top_notch")
                 )
             }
 
-            // 4. SWIPEABLE URL BAR: Swiping UP on this URL bar causes it to disappear
-            SwipeableGamingUrlBar(
-                isVisible = isUrlBarVisible,
-                currentUrl = currentUrl,
-                recentUrls = recentUrls,
-                userAgentMode = userAgentMode,
-                onDismissUrlBar = { dismissUrlBar() },
-                onNavigateToUrl = { url, ua ->
-                    launchUrl(url, ua)
-                },
-                onUserAgentChanged = { userAgentMode = it },
-                onReload = { webViewInstance?.reload() },
-                onGoBack = {
-                    if (webViewInstance?.canGoBack() == true) {
-                        webViewInstance?.goBack()
-                    }
-                },
-                onGoForward = {
-                    if (webViewInstance?.canGoForward() == true) {
-                        webViewInstance?.goForward()
-                    }
-                },
-                onOpenFullHub = {
-                    dismissUrlBar()
-                    isHubOpen = true
-                },
-                onGoToHome = {
-                    dismissUrlBar()
-                    isAtHomePortal = true
-                },
-                isAdBlockerEnabled = isAdBlockerEnabled,
-                onToggleAdBlocker = { toggleAdBlocker() },
-                onClearBrowserData = { isClearDataDialogOpen = true },
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
+            // 4. SWIPEABLE URL BAR: Only composed when requested (guarantees 0% touch obstruction in game mode)
+            if (isUrlBarVisible) {
+                SwipeableGamingUrlBar(
+                    isVisible = isUrlBarVisible,
+                    currentUrl = currentUrl,
+                    recentUrls = recentUrls,
+                    userAgentMode = userAgentMode,
+                    onDismissUrlBar = { dismissUrlBar() },
+                    onNavigateToUrl = { url, ua ->
+                        launchUrl(url, ua)
+                    },
+                    onUserAgentChanged = { userAgentMode = it },
+                    onReload = { webViewInstance?.reload() },
+                    onGoBack = {
+                        navigateBackOrHome()
+                    },
+                    onGoForward = {
+                        if (webViewInstance?.canGoForward() == true) {
+                            webViewInstance?.goForward()
+                        }
+                    },
+                    onOpenFullHub = {
+                        dismissUrlBar()
+                        isHubOpen = true
+                    },
+                    onGoToHome = {
+                        dismissUrlBar()
+                        isAtHomePortal = true
+                    },
+                    isAdBlockerEnabled = isAdBlockerEnabled,
+                    onToggleAdBlocker = { toggleAdBlocker() },
+                    onClearBrowserData = { isClearDataDialogOpen = true },
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+            }
 
             // 5. Performance & Telemetry HUD (Optional)
             if (isPerformanceHudEnabled) {
@@ -353,9 +382,7 @@ fun GamingBrowserScreen(
                         webViewInstance?.reload()
                     },
                     onGoBack = {
-                        if (webViewInstance?.canGoBack() == true) {
-                            webViewInstance?.goBack()
-                        }
+                        navigateBackOrHome()
                     },
                     onGoForward = {
                         if (webViewInstance?.canGoForward() == true) {

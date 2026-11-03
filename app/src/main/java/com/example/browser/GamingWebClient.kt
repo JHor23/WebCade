@@ -144,4 +144,8 @@ class GamingWebClient(
             onCustomViewChanged(null, null)
         }
     }
+
+    fun hideCustomView() {
+        webChromeClient.onHideCustomView()
+    }
 }
