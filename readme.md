@@ -50,6 +50,7 @@ WebCade features an easily accessible **DNS Protection Toggle** right in the URL
 
 ## IMPORTANT
 *   For the time being, you will have to uninstall previous versions before installing the latest releases.  I do not have these set to update over themselves.
+*   If you investigate the package name, you'll see it listed as "ZeroPlay".  Google AI Studio gave this application that name, and I'm unable to change that at a package level.
 
 ## 📄 License
 Created by Google A.I. Studio and it falls under their licensing.
