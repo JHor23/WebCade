@@ -48,8 +48,8 @@ WebCade features an easily accessible **DNS Protection Toggle** right in the URL
 
 ---
 
-**IMPORTANT**
-*For the time being, you will have to uninstall previous versions before installing the latest releases.  I do not have these set to update over themselves.
+## IMPORTANT
+*   For the time being, you will have to uninstall previous versions before installing the latest releases.  I do not have these set to update over themselves.
 
 ## 📄 License
 Created by Google A.I. Studio and it falls under their licensing.
