@@ -73,5 +73,5 @@ jobs:
         run: |
           gh release create "build-${GITHUB_RUN_NUMBER}" app/build/outputs/apk/debug/WebCade.apk \
             --target "$GITHUB_SHA" \
-            --title "WebCade debug build ${GITHUB_RUN_NUMBER}" \
-            --notes "Automated debug APK built from commit ${GITHUB_SHA}."
+            --title "WebCade v1.${GITHUB_RUN_NUMBER}" \
+            --notes "Automated APK built from commit ${GITHUB_SHA}."
