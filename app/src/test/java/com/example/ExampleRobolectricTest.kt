@@ -158,6 +158,14 @@ class ExampleRobolectricTest {
     // Toggling ad-block off should allow requests through
     adBlockManager.setAdBlockerEnabled(false)
     assertFalse(adBlockManager.shouldBlock(adUri1))
+
+    // Re-enable and test dynamic first-party game whitelisting
+    adBlockManager.setAdBlockerEnabled(true)
+    adBlockManager.setCurrentGameHost("https://www.pokefableonline.com/game")
+    val gameAssetUri = android.net.Uri.parse("https://cdn.pokefableonline.com/assets/sprites/charizard.png")
+    val gameWsUri = android.net.Uri.parse("https://ws.pokefableonline.com/socket.io")
+    assertFalse(adBlockManager.shouldBlock(gameAssetUri))
+    assertFalse(adBlockManager.shouldBlock(gameWsUri))
   }
 
   @Test

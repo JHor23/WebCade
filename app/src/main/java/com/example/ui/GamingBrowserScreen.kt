@@ -148,6 +148,7 @@ fun GamingBrowserScreen(
         recentUrls = urlHistoryManager.getRecentUrls()
         currentUrl = formatted
         userAgentMode = ua
+        adBlockManager.setCurrentGameHost(formatted)
         isAtHomePortal = false
         dismissUrlBar()
         webViewInstance?.loadUrl(formatted)

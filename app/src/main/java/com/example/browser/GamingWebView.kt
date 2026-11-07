@@ -22,12 +22,14 @@ import com.example.model.UserAgentMode
 
 @SuppressLint("SetJavaScriptEnabled")
 fun setupGamingWebSettings(webView: WebView, userAgentMode: UserAgentMode) {
-    // Enable hardware acceleration at the view layer
-    webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+    // 1. Direct GPU composition: LAYER_TYPE_NONE allows Chromium's native compositor to render WebGL directly
+    // without forcing an expensive, memory-heavy off-screen View texture layer.
+    webView.setLayerType(View.LAYER_TYPE_NONE, null)
     webView.setBackgroundColor(android.graphics.Color.BLACK)
     webView.isFocusable = true
     webView.isFocusableInTouchMode = true
     webView.overScrollMode = View.OVER_SCROLL_NEVER
+    webView.keepScreenOn = true
 
     val settings = webView.settings
     settings.javaScriptEnabled = true
@@ -40,7 +42,12 @@ fun setupGamingWebSettings(webView: WebView, userAgentMode: UserAgentMode) {
     settings.allowFileAccess = false
     settings.allowContentAccess = true
 
-    // Enable mixed content for cloud streaming servers that negotiate hybrid assets
+    // Disable Safe Browsing cloud lookups on game assets to cut loading screen times
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        settings.safeBrowsingEnabled = false
+    }
+
+    // Enable mixed content for cloud streaming servers and game websockets
     settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
     // Performance and responsiveness optimizations
@@ -48,6 +55,19 @@ fun setupGamingWebSettings(webView: WebView, userAgentMode: UserAgentMode) {
     settings.setSupportZoom(false)
     settings.builtInZoomControls = false
     settings.displayZoomControls = false
+    settings.loadsImagesAutomatically = true
+    settings.blockNetworkImage = false
+    settings.blockNetworkLoads = false
+    settings.javaScriptCanOpenWindowsAutomatically = true
+
+    // Configure ServiceWorker caching for offline asset bundles and shaders
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+            val swController = android.webkit.ServiceWorkerController.getInstance()
+            swController.serviceWorkerWebSettings.cacheMode = WebSettings.LOAD_DEFAULT
+            swController.serviceWorkerWebSettings.allowContentAccess = true
+        } catch (_: Exception) {}
+    }
 
     // Apply User Agent
     if (userAgentMode.value.isNotEmpty()) {

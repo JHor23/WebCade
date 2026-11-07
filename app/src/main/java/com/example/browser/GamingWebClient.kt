@@ -3,6 +3,7 @@ package com.example.browser
 import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
+import android.webkit.CookieManager
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -37,6 +38,8 @@ class GamingWebClient(
     val webViewClient = object : WebViewClient() {
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
+            // Immediately whitelist game's root host so its assets & sockets load without delay
+            adBlockManager.setCurrentGameHost(url)
             _webState.value = _webState.value.copy(
                 url = url ?: "",
                 isLoading = true,
@@ -48,6 +51,7 @@ class GamingWebClient(
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
+            adBlockManager.setCurrentGameHost(url)
             _webState.value = _webState.value.copy(
                 url = url ?: "",
                 title = view?.title ?: "",
@@ -55,6 +59,13 @@ class GamingWebClient(
                 canGoBack = view?.canGoBack() ?: false,
                 canGoForward = view?.canGoForward() ?: false
             )
+            // Flush session cookies to persistent storage
+            try {
+                CookieManager.getInstance().flush()
+            } catch (_: Exception) {}
+
+            // Inject connection resilience & audio unlock bridge
+            view?.evaluateJavascript(ConnectionResilienceBridge.CONNECTION_RESILIENCE_SCRIPT, null)
             // Inject virtual gamepad bridge into DOM
             view?.evaluateJavascript(VirtualGamepadBridge.INJECTION_SCRIPT, null)
             // Inject keyboard & mouse emulation bridge into DOM
