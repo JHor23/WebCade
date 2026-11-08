@@ -30,6 +30,7 @@ data class WebState(
 
 class GamingWebClient(
     val adBlockManager: AdBlockManager,
+    val gameAssetCacheManager: GameAssetCacheManager,
     private val onCustomViewChanged: (View?, WebChromeClient.CustomViewCallback?) -> Unit
 ) {
     private val _webState = MutableStateFlow(WebState())
@@ -88,6 +89,15 @@ class GamingWebClient(
                     ByteArrayInputStream(ByteArray(0))
                 )
             }
+            if (request != null) {
+                val cached = gameAssetCacheManager.shouldInterceptRequest(
+                    request = request,
+                    userAgent = view?.settings?.userAgentString
+                )
+                if (cached != null) {
+                    return cached
+                }
+            }
             return super.shouldInterceptRequest(view, request)
         }
 
@@ -143,16 +153,27 @@ class GamingWebClient(
         }
 
         override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
-            customViewCallback = callback
-            _webState.value = _webState.value.copy(isFullscreenCustomView = true)
-            onCustomViewChanged(view, callback)
+            try {
+                if (customViewCallback != null) {
+                    callback?.onCustomViewHidden()
+                    return
+                }
+                customViewCallback = callback
+                (view?.parent as? android.view.ViewGroup)?.removeView(view)
+                _webState.value = _webState.value.copy(isFullscreenCustomView = true)
+                onCustomViewChanged(view, callback)
+            } catch (_: Exception) {
+                try { callback?.onCustomViewHidden() } catch (_: Exception) {}
+            }
         }
 
         override fun onHideCustomView() {
-            customViewCallback?.onCustomViewHidden()
-            customViewCallback = null
-            _webState.value = _webState.value.copy(isFullscreenCustomView = false)
-            onCustomViewChanged(null, null)
+            try {
+                customViewCallback?.onCustomViewHidden()
+                customViewCallback = null
+                _webState.value = _webState.value.copy(isFullscreenCustomView = false)
+                onCustomViewChanged(null, null)
+            } catch (_: Exception) {}
         }
     }
 

@@ -1,8 +1,12 @@
 package com.example.ui
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebView
+import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -38,12 +42,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.Toast
 import com.example.browser.AdBlockManager
 import com.example.browser.BrowserDataManager
+import com.example.browser.GameAssetCacheManager
 import com.example.browser.GamingWebClient
 import com.example.browser.GamingWebViewContainer
 import com.example.browser.VirtualGamepadBridge
 import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadManager
 import com.example.model.GamingPresets
+import com.example.model.ScreenOrientationMode
 import com.example.model.UrlHistoryManager
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
@@ -53,11 +59,10 @@ fun GamingBrowserScreen(
     gamepadManager: GamepadManager,
     isMenuRequestedFromGamepad: Boolean,
     onMenuDismissed: () -> Unit,
-    isUrlBarRequestedFromSwipe: Boolean = false,
-    onUrlBarDismissed: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val activity = context as? Activity
     val urlHistoryManager = remember { UrlHistoryManager(context) }
 
     var recentUrls by remember { mutableStateOf(urlHistoryManager.getRecentUrls()) }
@@ -66,6 +71,7 @@ fun GamingBrowserScreen(
     }
     var isAtHomePortal by rememberSaveable { mutableStateOf(true) }
     var userAgentMode by remember { mutableStateOf(UserAgentMode.DESKTOP_CHROME) }
+    var orientationMode by rememberSaveable { mutableStateOf(ScreenOrientationMode.AUTO) }
     var isUrlBarVisible by remember { mutableStateOf(false) }
     var isHubOpen by remember { mutableStateOf(false) }
     var isVirtualGamepadEnabled by remember { mutableStateOf(false) }
@@ -74,11 +80,36 @@ fun GamingBrowserScreen(
     var isClearDataDialogOpen by remember { mutableStateOf(false) }
 
     val adBlockManager = remember { AdBlockManager(context) }
+    val gameAssetCacheManager = remember { GameAssetCacheManager(context) }
     val isAdBlockerEnabled by adBlockManager.isAdBlockerEnabled.collectAsState()
     val blockedAdsCount by adBlockManager.blockedAdsCount.collectAsState()
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var customFullscreenView by remember { mutableStateOf<View?>(null) }
+
+    fun setOrientation(newMode: ScreenOrientationMode) {
+        orientationMode = newMode
+        activity?.requestedOrientation = when (newMode) {
+            ScreenOrientationMode.AUTO -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            ScreenOrientationMode.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            ScreenOrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        }
+    }
+
+    fun toggleOrientation() {
+        val nextMode = when (orientationMode) {
+            ScreenOrientationMode.AUTO -> ScreenOrientationMode.LANDSCAPE
+            ScreenOrientationMode.LANDSCAPE -> ScreenOrientationMode.PORTRAIT
+            ScreenOrientationMode.PORTRAIT -> ScreenOrientationMode.AUTO
+        }
+        setOrientation(nextMode)
+        val msg = when (nextMode) {
+            ScreenOrientationMode.AUTO -> "Screen Orientation: Auto-Rotate (Sensor)"
+            ScreenOrientationMode.LANDSCAPE -> "Screen Orientation: Locked to Landscape"
+            ScreenOrientationMode.PORTRAIT -> "Screen Orientation: Locked to Portrait (Portrait Gaming)"
+        }
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    }
 
     val gamepadStatus by gamepadManager.gamepadStatus.collectAsState()
     val controllerMode by gamepadManager.controllerMode.collectAsState()
@@ -88,8 +119,18 @@ fun GamingBrowserScreen(
     val gamingWebClient = remember {
         GamingWebClient(
             adBlockManager = adBlockManager,
+            gameAssetCacheManager = gameAssetCacheManager,
             onCustomViewChanged = { view, _ ->
                 customFullscreenView = view
+                if (view != null) {
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                } else {
+                    activity?.requestedOrientation = when (orientationMode) {
+                        ScreenOrientationMode.AUTO -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                        ScreenOrientationMode.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                        ScreenOrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                    }
+                }
             }
         )
     }
@@ -130,16 +171,8 @@ fun GamingBrowserScreen(
         )
     }
 
-    // Listen for top swipe-down from MainActivity (non-blocking)
-    LaunchedEffect(isUrlBarRequestedFromSwipe) {
-        if (isUrlBarRequestedFromSwipe) {
-            isUrlBarVisible = true
-        }
-    }
-
     fun dismissUrlBar() {
         isUrlBarVisible = false
-        onUrlBarDismissed()
     }
 
     fun launchUrl(url: String, ua: UserAgentMode) {
@@ -151,7 +184,10 @@ fun GamingBrowserScreen(
         adBlockManager.setCurrentGameHost(formatted)
         isAtHomePortal = false
         dismissUrlBar()
-        webViewInstance?.loadUrl(formatted)
+        if (webViewInstance != null && webViewInstance?.url != formatted) {
+            webViewInstance?.loadUrl(formatted)
+        }
+        Toast.makeText(context, "Press Phone Back button anytime for URL bar & settings", Toast.LENGTH_SHORT).show()
     }
 
     /**
@@ -187,7 +223,9 @@ fun GamingBrowserScreen(
         onMenuDismissed()
     }
 
-    // Intercept back: dismiss dialogs, URL Bar, Hub, or navigate back / return to Home Portal
+    // Intercept back button:
+    // When playing in fullscreen game mode: pressing phone's back button OPENS the URL bar & settings!
+    // If the URL bar or any dialog is already open: pressing back DISMISSES it to return to clean full-screen game.
     BackHandler(enabled = isClearDataDialogOpen || isUrlBarVisible || isHubOpen || !isAtHomePortal) {
         if (isClearDataDialogOpen) {
             isClearDataDialogOpen = false
@@ -196,7 +234,8 @@ fun GamingBrowserScreen(
         } else if (isHubOpen) {
             isHubOpen = false
         } else {
-            navigateBackOrHome()
+            // User pressed Phone's back button during gameplay -> open URL bar & settings screen
+            isUrlBarVisible = true
         }
     }
 
@@ -232,19 +271,53 @@ fun GamingBrowserScreen(
                 }
         ) {
             // 1. Primary Fullscreen Gaming Canvas (100% Zero GUI, direct touch handling)
+            GamingWebViewContainer(
+                currentUrl = currentUrl,
+                userAgentMode = userAgentMode,
+                gamingWebClient = gamingWebClient,
+                onWebViewReady = { webView ->
+                    webViewInstance = webView
+                    gamepadManager.attachWebView(webView)
+                },
+                onOrientationChange = { mode ->
+                    activity?.runOnUiThread {
+                        setOrientation(mode)
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
             if (customFullscreenView != null) {
                 AndroidView(
-                    factory = { customFullscreenView!! },
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                GamingWebViewContainer(
-                    currentUrl = currentUrl,
-                    userAgentMode = userAgentMode,
-                    gamingWebClient = gamingWebClient,
-                    onWebViewReady = { webView ->
-                        webViewInstance = webView
-                        gamepadManager.attachWebView(webView)
+                    factory = { ctx ->
+                        FrameLayout(ctx).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            setBackgroundColor(android.graphics.Color.BLACK)
+                        }
+                    },
+                    update = { container ->
+                        val targetView = customFullscreenView
+                        if (targetView != null) {
+                            if (targetView.parent !== container) {
+                                (targetView.parent as? ViewGroup)?.removeView(targetView)
+                                container.removeAllViews()
+                                container.addView(
+                                    targetView,
+                                    ViewGroup.LayoutParams(
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                        ViewGroup.LayoutParams.MATCH_PARENT
+                                    )
+                                )
+                            }
+                        } else {
+                            container.removeAllViews()
+                        }
+                    },
+                    onReset = { container ->
+                        container.removeAllViews()
                     },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -264,25 +337,6 @@ fun GamingBrowserScreen(
                         .height(2.5.dp),
                     color = CyberCyan,
                     trackColor = Color.Transparent
-                )
-            }
-
-            // 3. Discreet Notch Indicator (Tiny 36dp pill; does NOT block clicks on the rest of the top)
-            if (!isUrlBarVisible) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 2.dp)
-                        .width(36.dp)
-                        .height(5.dp)
-                        .alpha(0.3f)
-                        .background(Color(0x99161E2E), RoundedCornerShape(3.dp))
-                        .border(0.5.dp, Color(0x6600F2FE), RoundedCornerShape(3.dp))
-                        .clickable(
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                            indication = null
-                        ) { isUrlBarVisible = true }
-                        .testTag("stealth_top_notch")
                 )
             }
 
@@ -318,6 +372,8 @@ fun GamingBrowserScreen(
                     isAdBlockerEnabled = isAdBlockerEnabled,
                     onToggleAdBlocker = { toggleAdBlocker() },
                     onClearBrowserData = { isClearDataDialogOpen = true },
+                    orientationMode = orientationMode,
+                    onToggleOrientationMode = { toggleOrientation() },
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }
@@ -401,7 +457,9 @@ fun GamingBrowserScreen(
                     },
                     isAdBlockerEnabled = isAdBlockerEnabled,
                     blockedAdsCount = blockedAdsCount,
-                    onToggleAdBlocker = { toggleAdBlocker() }
+                    onToggleAdBlocker = { toggleAdBlocker() },
+                    orientationMode = orientationMode,
+                    onOrientationModeChanged = { setOrientation(it) }
                 )
             }
         }

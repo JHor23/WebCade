@@ -70,6 +70,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.GamingPresets
+import com.example.model.ScreenOrientationMode
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.DarkBackground
@@ -100,6 +101,8 @@ fun SwipeableGamingUrlBar(
     isAdBlockerEnabled: Boolean = true,
     onToggleAdBlocker: () -> Unit = {},
     onClearBrowserData: () -> Unit = {},
+    orientationMode: ScreenOrientationMode = ScreenOrientationMode.AUTO,
+    onToggleOrientationMode: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var urlInputText by remember { mutableStateOf(currentUrl) }
@@ -310,6 +313,28 @@ fun SwipeableGamingUrlBar(
                         )
                     }
 
+                    // Screen Orientation Toggle (Auto 🔄 / Landscape 🖥️ / Portrait 📱)
+                    IconButton(
+                        onClick = onToggleOrientationMode,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(
+                                if (orientationMode != ScreenOrientationMode.AUTO) CyberCyan.copy(alpha = 0.2f) else DarkSurfaceElevated,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .border(
+                                1.dp,
+                                if (orientationMode != ScreenOrientationMode.AUTO) CyberCyan else DarkBorder,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .testTag("url_bar_orientation_btn")
+                    ) {
+                        Text(
+                            text = orientationMode.iconEmoji,
+                            fontSize = 15.sp
+                        )
+                    }
+
                     // Trash can icon button (Clear cache & cookies)
                     IconButton(
                         onClick = onClearBrowserData,
@@ -475,7 +500,7 @@ fun SwipeableGamingUrlBar(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "SWIPE UP TO HIDE (FULL SCREEN)",
+                            text = "TAP HERE OR PRESS BACK TO RESUME GAME",
                             color = CyberCyan,
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace,

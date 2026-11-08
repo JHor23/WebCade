@@ -19,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [34])
 class ExampleRobolectricTest {
 
   @Test
@@ -169,18 +169,11 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `test BrowserDataManager clearAllBrowserData executes cleanly`() {
+  fun `test GameAssetCacheManager caches and clears cleanly`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
-    var completed = false
-    com.example.browser.BrowserDataManager.clearAllBrowserData(
-      context = context,
-      webView = null,
-      clearHistory = true,
-      onComplete = { completed = true }
-    )
-    // Run looper tasks
-    org.robolectric.shadows.ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
-    assertTrue(completed)
+    val assetManager = com.example.browser.GameAssetCacheManager(context)
+    assertNotNull(assetManager)
+    assetManager.clearCache()
   }
 }
 

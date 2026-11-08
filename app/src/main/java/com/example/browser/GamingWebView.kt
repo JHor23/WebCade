@@ -13,15 +13,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.model.ScreenOrientationMode
 import com.example.model.UserAgentMode
 
 @SuppressLint("SetJavaScriptEnabled")
-fun setupGamingWebSettings(webView: WebView, userAgentMode: UserAgentMode) {
+fun setupGamingWebSettings(
+    webView: WebView,
+    userAgentMode: UserAgentMode,
+    gamingWebClient: GamingWebClient? = null
+) {
     // 1. Direct GPU composition: LAYER_TYPE_NONE allows Chromium's native compositor to render WebGL directly
     // without forcing an expensive, memory-heavy off-screen View texture layer.
     webView.setLayerType(View.LAYER_TYPE_NONE, null)
@@ -60,12 +68,34 @@ fun setupGamingWebSettings(webView: WebView, userAgentMode: UserAgentMode) {
     settings.blockNetworkLoads = false
     settings.javaScriptCanOpenWindowsAutomatically = true
 
-    // Configure ServiceWorker caching for offline asset bundles and shaders
+    // Configure ServiceWorker caching for offline asset bundles, shaders, and web workers
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         try {
             val swController = android.webkit.ServiceWorkerController.getInstance()
             swController.serviceWorkerWebSettings.cacheMode = WebSettings.LOAD_DEFAULT
             swController.serviceWorkerWebSettings.allowContentAccess = true
+            if (gamingWebClient != null) {
+                swController.setServiceWorkerClient(object : android.webkit.ServiceWorkerClient() {
+                    override fun shouldInterceptRequest(
+                        request: android.webkit.WebResourceRequest
+                    ): android.webkit.WebResourceResponse? {
+                        val uri = request.url ?: return null
+                        if (gamingWebClient.adBlockManager.shouldBlock(uri)) {
+                            return android.webkit.WebResourceResponse(
+                                "text/plain",
+                                "UTF-8",
+                                java.io.ByteArrayInputStream(ByteArray(0))
+                            )
+                        }
+                        val cached = gamingWebClient.gameAssetCacheManager.shouldInterceptRequest(
+                            request = request,
+                            userAgent = webView.settings.userAgentString
+                        )
+                        if (cached != null) return cached
+                        return super.shouldInterceptRequest(request)
+                    }
+                })
+            }
         } catch (_: Exception) {}
     }
 
@@ -88,9 +118,11 @@ fun GamingWebViewContainer(
     userAgentMode: UserAgentMode,
     gamingWebClient: GamingWebClient,
     onWebViewReady: (WebView) -> Unit,
+    onOrientationChange: (ScreenOrientationMode) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var lastLoadedUrl by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
 
     // Retain WebView instance across orientation and configuration changes
     val webView = remember {
@@ -102,7 +134,29 @@ fun GamingWebViewContainer(
             setBackgroundColor(android.graphics.Color.BLACK)
             webViewClient = gamingWebClient.webViewClient
             webChromeClient = gamingWebClient.webChromeClient
-            setupGamingWebSettings(this, userAgentMode)
+            setupGamingWebSettings(this, userAgentMode, gamingWebClient)
+
+            // Register native bridge for HTML5 games to request orientation or handle full screen
+            addJavascriptInterface(
+                object {
+                    @android.webkit.JavascriptInterface
+                    fun requestLandscape() {
+                        onOrientationChange(ScreenOrientationMode.LANDSCAPE)
+                    }
+
+                    @android.webkit.JavascriptInterface
+                    fun requestPortrait() {
+                        onOrientationChange(ScreenOrientationMode.PORTRAIT)
+                    }
+
+                    @android.webkit.JavascriptInterface
+                    fun requestSensor() {
+                        onOrientationChange(ScreenOrientationMode.AUTO)
+                    }
+                },
+                "WebCadeNative"
+            )
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 addOnLayoutChangeListener { v, left, top, right, bottom, _, _, _, _ ->
                     val w = right - left
@@ -116,7 +170,8 @@ fun GamingWebViewContainer(
                     }
                 }
             }
-            if (currentUrl.isNotBlank()) {
+            if (currentUrl.isNotBlank() && lastLoadedUrl == null) {
+                lastLoadedUrl = currentUrl
                 loadUrl(currentUrl)
             }
             onWebViewReady(this)
@@ -135,9 +190,11 @@ fun GamingWebViewContainer(
         }
     }
 
-    // React to URL changes (ensures page loads even if recreated or after back navigation)
+    // React to URL changes: only re-navigate when currentUrl changes to a new target
+    // and never re-trigger on internal in-game SPA route or map changes
     LaunchedEffect(currentUrl) {
-        if (currentUrl.isNotBlank() && (webView.url == null || webView.url != currentUrl)) {
+        if (currentUrl.isNotBlank() && lastLoadedUrl != currentUrl) {
+            lastLoadedUrl = currentUrl
             webView.loadUrl(currentUrl)
         }
     }

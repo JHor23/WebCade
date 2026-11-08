@@ -26,6 +26,21 @@ enum class UserAgentMode(val label: String, val value: String) {
     )
 }
 
+enum class ScreenOrientationMode(val label: String, val iconEmoji: String) {
+    AUTO(
+        label = "Auto (Sensor)",
+        iconEmoji = "🔄"
+    ),
+    LANDSCAPE(
+        label = "Landscape (Widescreen)",
+        iconEmoji = "🖥️"
+    ),
+    PORTRAIT(
+        label = "Portrait (Handheld)",
+        iconEmoji = "📱"
+    )
+}
+
 object GamingPresets {
     val platforms = listOf(
         GamingPlatform(

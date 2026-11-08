@@ -74,6 +74,7 @@ import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadStatus
 import com.example.model.GamingPlatform
 import com.example.model.GamingPresets
+import com.example.model.ScreenOrientationMode
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.DarkBackground
@@ -110,7 +111,9 @@ fun GameHubDialog(
     onOpenControllerMapping: () -> Unit = {},
     isAdBlockerEnabled: Boolean = true,
     blockedAdsCount: Int = 0,
-    onToggleAdBlocker: (Boolean) -> Unit = {}
+    onToggleAdBlocker: (Boolean) -> Unit = {},
+    orientationMode: ScreenOrientationMode = ScreenOrientationMode.AUTO,
+    onOrientationModeChanged: (ScreenOrientationMode) -> Unit = {}
 ) {
     var customUrlInput by remember { mutableStateOf(currentUrl) }
     val clipboardManager = LocalClipboardManager.current
@@ -479,6 +482,47 @@ fun GameHubDialog(
                                         ),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.testTag("ua_chip_${mode.name.lowercase()}")
+                                    )
+                                }
+                            }
+                        }
+
+                        // Screen Orientation Mode (Auto, Landscape, Portrait)
+                        item {
+                            Text(
+                                text = "SCREEN ORIENTATION (PORTRAIT OR LANDSCAPE)",
+                                color = CyberCyan,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(ScreenOrientationMode.values()) { mode ->
+                                    val isSelected = orientationMode == mode
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { onOrientationModeChanged(mode) },
+                                        label = {
+                                            Text(
+                                                text = "${mode.iconEmoji} ${mode.label}",
+                                                fontSize = 11.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = CyberCyan,
+                                            selectedLabelColor = DarkBackground,
+                                            containerColor = DarkSurfaceElevated,
+                                            labelColor = TextSecondary
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.testTag("orientation_chip_${mode.name.lowercase()}")
                                     )
                                 }
                             }

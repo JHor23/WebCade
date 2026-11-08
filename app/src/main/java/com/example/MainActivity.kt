@@ -24,11 +24,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var gamepadManager: GamepadManager
     private var isMenuRequestedFromGamepad by mutableStateOf(false)
-    private var isUrlBarRequestedFromSwipe by mutableStateOf(false)
-
-    private var touchDownX = -1f
-    private var touchDownY = -1f
-    private var isPotentialTopSwipe = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,8 +66,6 @@ class MainActivity : ComponentActivity() {
                     gamepadManager = gamepadManager,
                     isMenuRequestedFromGamepad = isMenuRequestedFromGamepad,
                     onMenuDismissed = { isMenuRequestedFromGamepad = false },
-                    isUrlBarRequestedFromSwipe = isUrlBarRequestedFromSwipe,
-                    onUrlBarDismissed = { isUrlBarRequestedFromSwipe = false },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -93,57 +86,6 @@ class MainActivity : ComponentActivity() {
         applySystemGestureExclusions()
     }
 
-    /**
-     * Non-blocking gesture listener: observes downward swipes from the top-center edge
-     * to reveal the URL bar WITHOUT consuming taps or blocking clicks on the web page.
-     *
-     * CRITICAL FIX FOR PIXEL 9A:
-     * - ONLY listens within the center 30% of the screen width (around the stealth notch indicator).
-     * - Completely ignores touches in the top-right and top-left corners so in-game menus, inventory,
-     *   minimaps, and character HUDs receive 100% unimpeded direct touch events without dead zones.
-     */
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        when (ev.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                val screenWidth = window.decorView.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels
-                val density = resources.displayMetrics.density
-                val topThresholdPx = 48f * density // Top 48dp region
-
-                // Strictly center region only (35% to 65% of screen width)
-                val isCenterRegion = ev.x > screenWidth * 0.35f && ev.x < screenWidth * 0.65f
-
-                if (isCenterRegion && ev.y < topThresholdPx) {
-                    touchDownX = ev.x
-                    touchDownY = ev.y
-                    isPotentialTopSwipe = true
-                } else {
-                    isPotentialTopSwipe = false
-                    touchDownY = -1f
-                }
-            }
-            MotionEvent.ACTION_MOVE -> {
-                if (isPotentialTopSwipe && touchDownY >= 0f) {
-                    val deltaY = ev.y - touchDownY
-                    val deltaX = kotlin.math.abs(ev.x - touchDownX)
-                    val density = resources.displayMetrics.density
-                    val swipeThresholdPx = 64f * density // 64dp vertical swipe distance
-
-                    // Only trigger if dragged downward sufficiently with predominantly vertical motion
-                    if (deltaY > swipeThresholdPx && deltaX < deltaY * 0.75f) {
-                        isPotentialTopSwipe = false
-                        touchDownY = -1f
-                        isUrlBarRequestedFromSwipe = true
-                    }
-                }
-            }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                touchDownY = -1f
-                isPotentialTopSwipe = false
-            }
-        }
-        // Always pass event down so web clicks and in-game controls work 100% unimpeded
-        return super.dispatchTouchEvent(ev)
-    }
 
     /**
      * Informs the Android OS that the top edge contains active game controls and buttons.

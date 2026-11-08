@@ -52,8 +52,9 @@ object BrowserDataManager {
             GeolocationPermissions.getInstance().clearAll()
         } catch (_: Exception) {}
 
-        // 5. Clean local disk cache directories
+        // 5. Clean local disk cache directories & GameAssetCacheManager
         try {
+            GameAssetCacheManager(context).clearCache()
             context.cacheDir.deleteRecursively()
             context.codeCacheDir.deleteRecursively()
         } catch (_: Exception) {}

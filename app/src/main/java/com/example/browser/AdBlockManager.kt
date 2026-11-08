@@ -162,13 +162,16 @@ class AdBlockManager(context: Context) {
             if (host != null) {
                 // Extract root domain (e.g. www.pokefableonline.com -> pokefableonline.com)
                 val parts = host.split('.')
-                currentGameRootHost = if (parts.size >= 2) {
+                val newRoot = if (parts.size >= 2) {
                     "${parts[parts.size - 2]}.${parts[parts.size - 1]}"
                 } else {
                     host
                 }
-                // Clear cache on game transition to ensure accurate verdicts
-                hostDecisionCache.clear()
+                // Only clear cache when actually switching to a different game root domain
+                if (newRoot != currentGameRootHost) {
+                    currentGameRootHost = newRoot
+                    hostDecisionCache.clear()
+                }
             }
         } catch (_: Exception) {
             currentGameRootHost = null
