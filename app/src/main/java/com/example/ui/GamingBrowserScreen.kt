@@ -357,7 +357,7 @@ fun GamingBrowserScreen(
                 )
             }
 
-            // 4. SWIPEABLE URL BAR: Only composed when requested (guarantees 0% touch obstruction in game mode)
+            // 4. FULL-SCREEN QUICK SETTINGS & URL BAR: Only composed when requested via Phone Back button
             if (isUrlBarVisible) {
                 SwipeableGamingUrlBar(
                     isVisible = isUrlBarVisible,
@@ -391,7 +391,11 @@ fun GamingBrowserScreen(
                     onClearBrowserData = { isClearDataDialogOpen = true },
                     orientationMode = orientationMode,
                     onToggleOrientationMode = { toggleOrientation() },
-                    modifier = Modifier.align(Alignment.TopCenter)
+                    onSetOrientationMode = { setOrientation(it) },
+                    pageTitle = webState.title,
+                    canGoBack = webState.canGoBack,
+                    canGoForward = webState.canGoForward,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 

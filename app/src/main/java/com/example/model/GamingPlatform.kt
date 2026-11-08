@@ -11,18 +11,21 @@ data class GamingPlatform(
     val category: String = "Cloud Gaming"
 )
 
-enum class UserAgentMode(val label: String, val value: String) {
+enum class UserAgentMode(val label: String, val value: String, val iconEmoji: String) {
     DESKTOP_CHROME(
         label = "Desktop Windows (Chrome 131)",
-        value = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        value = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        iconEmoji = "💻"
     ),
     CHROME_OS(
         label = "ChromeOS / Chromebook",
-        value = "Mozilla/5.0 (X11; CrOS x86_64 15886.44.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        value = "Mozilla/5.0 (X11; CrOS x86_64 15886.44.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        iconEmoji = "🖥️"
     ),
     MOBILE(
         label = "Default Mobile",
-        value = ""
+        value = "",
+        iconEmoji = "📱"
     )
 }
 
