@@ -81,22 +81,23 @@ class GamingWebClient(
             view: WebView?,
             request: WebResourceRequest?
         ): WebResourceResponse? {
-            val uri = request?.url ?: return null
-            if (adBlockManager.shouldBlock(uri)) {
-                return WebResourceResponse(
-                    "text/plain",
-                    "UTF-8",
-                    ByteArrayInputStream(ByteArray(0))
-                )
-            }
-            if (request != null) {
-                val cached = gameAssetCacheManager.shouldInterceptRequest(
-                    request = request,
-                    userAgent = view?.settings?.userAgentString
-                )
-                if (cached != null) {
-                    return cached
+            try {
+                val uri = request?.url ?: return null
+                if (adBlockManager.shouldBlock(uri)) {
+                    return WebResourceResponse(
+                        "text/plain",
+                        "UTF-8",
+                        ByteArrayInputStream(ByteArray(0))
+                    )
                 }
+                if (request != null) {
+                    val cached = gameAssetCacheManager.shouldInterceptRequest(request)
+                    if (cached != null) {
+                        return cached
+                    }
+                }
+            } catch (_: Throwable) {
+                return null
             }
             return super.shouldInterceptRequest(view, request)
         }

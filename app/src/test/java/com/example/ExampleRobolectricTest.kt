@@ -175,5 +175,35 @@ class ExampleRobolectricTest {
     assertNotNull(assetManager)
     assetManager.clearCache()
   }
+
+  @Test
+  fun `test GameAssetCacheManager recognizes cacheable static assets and excludes dynamic endpoints`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val assetManager = com.example.browser.GameAssetCacheManager(context)
+
+    // Helper mock request
+    fun createMockRequest(url: String, isMainFrame: Boolean = false, method: String = "GET"): android.webkit.WebResourceRequest {
+      return object : android.webkit.WebResourceRequest {
+        override fun getUrl(): android.net.Uri = android.net.Uri.parse(url)
+        override fun isForMainFrame(): Boolean = isMainFrame
+        override fun isRedirect(): Boolean = false
+        override fun hasGesture(): Boolean = false
+        override fun getMethod(): String = method
+        override fun getRequestHeaders(): Map<String, String> = emptyMap()
+      }
+    }
+
+    // Static assets should be cacheable
+    assertTrue(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/sprites/player.png")))
+    assertTrue(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/audio/bgm.ogg")))
+    assertTrue(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/engine/game.wasm")))
+    assertTrue(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/maps/level1.json")))
+
+    // Main frame, non-GET, dynamic APIs, and WebSockets should NOT be cached
+    assertFalse(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/index.html", isMainFrame = true)))
+    assertFalse(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/api/user/save", method = "POST")))
+    assertFalse(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/auth/login")))
+    assertFalse(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/socket.io/?EIO=4")))
+  }
 }
 

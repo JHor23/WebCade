@@ -19,6 +19,7 @@ import java.net.URL
 import java.security.MessageDigest
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 
 /**
  * High-performance, two-tier game asset caching engine for WebCade.
@@ -30,9 +31,10 @@ import java.util.concurrent.ConcurrentHashMap
  * Tier 2: 256MB persistent disk cache with atomic file storage & LRU eviction
  *
  * Features:
- * - Serves assets with immutable Cache-Control & CORS headers so games never stall or throw canvas errors
- * - Synchronous worker-thread fetch on cache miss with cookie and header passthrough
- * - Resilient offline/stale fallback during scene transitions if network packets are dropped
+ * - Serves cached assets with immutable Cache-Control & CORS headers so games never stall or throw canvas errors
+ * - Non-blocking: cache misses immediately fall through to Chromium's native HTTP/2/3 pipeline with zero latency,
+ *   while assets are cached in the background for subsequent transitions
+ * - Thread-safe: never touches Android Views or WebSettings on worker threads
  * - Safe exclusion of main-frame HTML, dynamic API endpoints, and WebSockets
  */
 class GameAssetCacheManager(private val context: Context) {
@@ -87,201 +89,180 @@ class GameAssetCacheManager(private val context: Context) {
         }
     }
 
-    // Set of URLs currently being downloaded to prevent redundant parallel requests for the same asset
-    private val activeFetches = ConcurrentHashMap<String, Any>()
+    // Dedicated bounded thread pool for background asset caching without blocking Chromium IO threads
+    private val backgroundCacheExecutor = Executors.newFixedThreadPool(2)
+
+    // Set of URLs currently being downloaded to prevent redundant parallel requests
+    private val activeFetches = ConcurrentHashMap<String, Boolean>()
 
     /**
      * Determines whether a web request is for a cacheable static game asset.
      */
     fun isCacheableGameAsset(request: WebResourceRequest): Boolean {
-        // Never intercept main frame HTML navigation
-        if (request.isForMainFrame) return false
+        try {
+            // Never intercept main frame HTML navigation
+            if (request.isForMainFrame) return false
 
-        // Only cache GET requests
-        val method = request.method?.uppercase(Locale.ROOT) ?: "GET"
-        if (method != "GET") return false
+            // Only cache GET requests
+            val method = request.method?.uppercase(Locale.ROOT) ?: "GET"
+            if (method != "GET") return false
 
-        val uri = request.url ?: return false
-        val scheme = uri.scheme?.lowercase(Locale.ROOT) ?: ""
-        if (scheme != "http" && scheme != "https") return false
+            val uri = request.url ?: return false
+            val scheme = uri.scheme?.lowercase(Locale.ROOT) ?: ""
+            if (scheme != "http" && scheme != "https") return false
 
-        val path = uri.path?.lowercase(Locale.ROOT) ?: ""
+            val path = uri.path?.lowercase(Locale.ROOT) ?: ""
 
-        // Exclude dynamic APIs, WebSockets, and authentication endpoints
-        for (dynamicPattern in DYNAMIC_PATH_PATTERNS) {
-            if (path.contains(dynamicPattern)) return false
-        }
+            // Exclude dynamic APIs, WebSockets, and authentication endpoints
+            for (dynamicPattern in DYNAMIC_PATH_PATTERNS) {
+                if (path.contains(dynamicPattern)) return false
+            }
 
-        // Check file extension
-        val dotIndex = path.lastIndexOf('.')
-        if (dotIndex != -1 && dotIndex < path.length - 1) {
-            val extension = path.substring(dotIndex + 1)
-            if (CACHEABLE_EXTENSIONS.contains(extension)) {
+            // Check file extension
+            val dotIndex = path.lastIndexOf('.')
+            if (dotIndex != -1 && dotIndex < path.length - 1) {
+                val extension = path.substring(dotIndex + 1)
+                if (CACHEABLE_EXTENSIONS.contains(extension)) {
+                    return true
+                }
+            }
+
+            // Check if query string indicates a known game asset type
+            val query = uri.query?.lowercase(Locale.ROOT) ?: ""
+            if (query.contains("format=png") || query.contains("format=webp") ||
+                query.contains("type=texture") || query.contains("type=audio") ||
+                query.contains("spritesheet") || query.contains("tileset")
+            ) {
                 return true
             }
-        }
 
-        // Check if query string indicates a known game asset type
-        val query = uri.query?.lowercase(Locale.ROOT) ?: ""
-        if (query.contains("format=png") || query.contains("format=webp") ||
-            query.contains("type=texture") || query.contains("type=audio") ||
-            query.contains("spritesheet") || query.contains("tileset")
-        ) {
-            return true
+            return false
+        } catch (_: Throwable) {
+            return false
         }
-
-        return false
     }
 
     /**
      * Intercepts and fulfills game asset requests from memory or disk cache.
-     * Returns a fast WebResourceResponse if cached or freshly fetched, or null to fall back.
+     * Returns an immediate WebResourceResponse if cached, or null so Chromium's native
+     * network stack fetches the resource with zero thread blocking.
      */
-    fun shouldInterceptRequest(request: WebResourceRequest, userAgent: String?): WebResourceResponse? {
-        if (!isCacheableGameAsset(request)) return null
+    fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
+        try {
+            if (!isCacheableGameAsset(request)) return null
 
-        val uri = request.url ?: return null
-        val urlString = uri.toString()
-        val cacheKey = hashUrl(urlString)
+            val uri = request.url ?: return null
+            val urlString = uri.toString()
+            val cacheKey = hashUrl(urlString)
 
-        // 1. Tier 1: Check in-memory LRU cache (instant 0-1ms hit)
-        val memHit = memoryCache.get(cacheKey)
-        if (memHit != null) {
-            return buildWebResourceResponse(
-                data = ByteArrayInputStream(memHit.data),
-                mimeType = memHit.mimeType,
-                encoding = memHit.encoding,
-                cacheSource = "HIT-MEMORY"
-            )
-        }
-
-        // 2. Tier 2: Check persistent disk cache
-        val diskFile = File(cacheDir, "$cacheKey.asset")
-        if (diskFile.exists() && diskFile.length() > 0) {
-            val diskAsset = readDiskAsset(diskFile)
-            if (diskAsset != null) {
-                // Populate memory cache if within single asset memory threshold
-                if (diskAsset.data.size <= MAX_MEM_ASSET_BYTES) {
-                    memoryCache.put(cacheKey, diskAsset)
-                }
+            // 1. Tier 1: Check in-memory LRU cache (instant 0-1ms hit)
+            val memHit = memoryCache.get(cacheKey)
+            if (memHit != null) {
                 return buildWebResourceResponse(
-                    data = ByteArrayInputStream(diskAsset.data),
-                    mimeType = diskAsset.mimeType,
-                    encoding = diskAsset.encoding,
-                    cacheSource = "HIT-DISK"
-                )
-            }
-        }
-
-        // 3. Cache Miss: Fetch on worker thread, store in cache, and serve
-        return fetchAndCacheAsset(request, urlString, cacheKey, userAgent)
-    }
-
-    private fun fetchAndCacheAsset(
-        request: WebResourceRequest,
-        urlString: String,
-        cacheKey: String,
-        userAgent: String?
-    ): WebResourceResponse? {
-        // Prevent dogpiling if multiple game objects request the same texture simultaneously
-        val lock = activeFetches.computeIfAbsent(cacheKey) { Any() }
-
-        synchronized(lock) {
-            // Re-check cache in case previous thread finished while waiting
-            val memoryHit = memoryCache.get(cacheKey)
-            if (memoryHit != null) {
-                return buildWebResourceResponse(
-                    data = ByteArrayInputStream(memoryHit.data),
-                    mimeType = memoryHit.mimeType,
-                    encoding = memoryHit.encoding,
+                    data = ByteArrayInputStream(memHit.data),
+                    mimeType = memHit.mimeType,
+                    encoding = memHit.encoding,
                     cacheSource = "HIT-MEMORY"
                 )
             }
 
-            var connection: HttpURLConnection? = null
-            try {
-                val url = URL(urlString)
-                connection = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "GET"
-                    connectTimeout = 8000
-                    readTimeout = 12000
-                    instanceFollowRedirects = true
-                    useCaches = true
+            // 2. Tier 2: Check persistent disk cache
+            val diskFile = File(cacheDir, "$cacheKey.asset")
+            if (diskFile.exists() && diskFile.length() > 0) {
+                val diskAsset = readDiskAsset(diskFile)
+                if (diskAsset != null) {
+                    if (diskAsset.data.size <= MAX_MEM_ASSET_BYTES) {
+                        memoryCache.put(cacheKey, diskAsset)
+                    }
+                    return buildWebResourceResponse(
+                        data = ByteArrayInputStream(diskAsset.data),
+                        mimeType = diskAsset.mimeType,
+                        encoding = diskAsset.encoding,
+                        cacheSource = "HIT-DISK"
+                    )
+                }
+            }
 
-                    // Forward client request headers (Accept, Accept-Encoding, Referer, etc.)
-                    val headers = request.requestHeaders
-                    if (headers != null) {
-                        for ((k, v) in headers) {
-                            if (!k.equals("Host", ignoreCase = true) &&
-                                !k.equals("Connection", ignoreCase = true)
-                            ) {
-                                setRequestProperty(k, v)
+            // 3. Cache Miss:
+            // Never block the Chromium worker thread with a synchronous HttpURLConnection!
+            // Instead, enqueue background caching for future scene transitions, and return null
+            // so Chromium's optimized HTTP/2/3 pipeline loads the asset instantly without stall.
+            enqueueBackgroundCache(request, urlString, cacheKey)
+            return null
+        } catch (_: Throwable) {
+            return null
+        }
+    }
+
+    private fun enqueueBackgroundCache(
+        request: WebResourceRequest,
+        urlString: String,
+        cacheKey: String
+    ) {
+        try {
+            if (activeFetches.containsKey(cacheKey)) return
+            val diskFile = File(cacheDir, "$cacheKey.asset")
+            if (diskFile.exists() && diskFile.length() > 0) return
+
+            val headers = request.requestHeaders?.toMap()
+            backgroundCacheExecutor.execute {
+                if (activeFetches.putIfAbsent(cacheKey, true) != null) return@execute
+                var connection: HttpURLConnection? = null
+                try {
+                    val url = URL(urlString)
+                    connection = (url.openConnection() as HttpURLConnection).apply {
+                        requestMethod = "GET"
+                        connectTimeout = 4000
+                        readTimeout = 6000
+                        instanceFollowRedirects = true
+                        useCaches = true
+
+                        if (headers != null) {
+                            for ((k, v) in headers) {
+                                if (!k.equals("Host", ignoreCase = true) &&
+                                    !k.equals("Connection", ignoreCase = true)
+                                ) {
+                                    setRequestProperty(k, v)
+                                }
+                            }
+                        }
+
+                        val cookies = try {
+                            CookieManager.getInstance().getCookie(urlString)
+                        } catch (_: Throwable) {
+                            null
+                        }
+                        if (!cookies.isNullOrBlank()) {
+                            setRequestProperty("Cookie", cookies)
+                        }
+                    }
+
+                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                        val rawContentType = connection.contentType ?: ""
+                        val mimeType = extractMimeType(rawContentType, urlString)
+                        val encoding = extractEncoding(rawContentType)
+
+                        val inputStream = connection.inputStream
+                        val bytes = readBytesWithLimit(inputStream, MAX_SINGLE_ASSET_BYTES)
+
+                        if (bytes != null && bytes.isNotEmpty()) {
+                            val asset = MemoryAsset(bytes, mimeType, encoding)
+                            saveToDiskCache(cacheKey, asset)
+                            if (bytes.size <= MAX_MEM_ASSET_BYTES) {
+                                memoryCache.put(cacheKey, asset)
                             }
                         }
                     }
-
-                    // Forward User-Agent
-                    if (!userAgent.isNullOrBlank()) {
-                        setRequestProperty("User-Agent", userAgent)
-                    }
-
-                    // Forward session and auth cookies
-                    val cookies = CookieManager.getInstance().getCookie(urlString)
-                    if (!cookies.isNullOrBlank()) {
-                        setRequestProperty("Cookie", cookies)
-                    }
+                } catch (_: Throwable) {
+                    // Silently ignore background caching errors
+                } finally {
+                    try {
+                        connection?.disconnect()
+                    } catch (_: Throwable) {}
+                    activeFetches.remove(cacheKey)
                 }
-
-                val responseCode = connection.responseCode
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val rawContentType = connection.contentType ?: ""
-                    val mimeType = extractMimeType(rawContentType, urlString)
-                    val encoding = extractEncoding(rawContentType)
-
-                    val inputStream = connection.inputStream
-                    val bytes = readBytesWithLimit(inputStream, MAX_SINGLE_ASSET_BYTES)
-
-                    if (bytes != null && bytes.isNotEmpty()) {
-                        val asset = MemoryAsset(bytes, mimeType, encoding)
-
-                        // Save to disk cache asynchronously without blocking response
-                        saveToDiskCache(cacheKey, asset)
-
-                        // Store in memory cache if appropriate
-                        if (bytes.size <= MAX_MEM_ASSET_BYTES) {
-                            memoryCache.put(cacheKey, asset)
-                        }
-
-                        return buildWebResourceResponse(
-                            data = ByteArrayInputStream(bytes),
-                            mimeType = mimeType,
-                            encoding = encoding,
-                            cacheSource = "MISS-NETWORK-CACHED"
-                        )
-                    }
-                }
-            } catch (_: Exception) {
-                // If network fetch fails, check if we have any fallback file on disk
-                val fallbackFile = File(cacheDir, "$cacheKey.asset")
-                if (fallbackFile.exists()) {
-                    val fallback = readDiskAsset(fallbackFile)
-                    if (fallback != null) {
-                        return buildWebResourceResponse(
-                            data = ByteArrayInputStream(fallback.data),
-                            mimeType = fallback.mimeType,
-                            encoding = fallback.encoding,
-                            cacheSource = "FALLBACK-STALE"
-                        )
-                    }
-                }
-            } finally {
-                connection?.disconnect()
-                activeFetches.remove(cacheKey)
             }
-        }
-
-        // Return null to allow WebView's default handling
-        return null
+        } catch (_: Throwable) {}
     }
 
     private fun buildWebResourceResponse(
@@ -308,23 +289,26 @@ class GameAssetCacheManager(private val context: Context) {
     }
 
     private fun readBytesWithLimit(input: InputStream, limit: Int): ByteArray? {
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(8192)
-        var totalRead = 0
-        var bytesRead: Int
-        while (input.read(buffer).also { bytesRead = it } != -1) {
-            totalRead += bytesRead
-            if (totalRead > limit) {
-                return null // Exceeds size limit (e.g. huge video stream)
+        return try {
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(8192)
+            var totalRead = 0
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                totalRead += bytesRead
+                if (totalRead > limit) {
+                    return null
+                }
+                output.write(buffer, 0, bytesRead)
             }
-            output.write(buffer, 0, bytesRead)
+            output.toByteArray()
+        } catch (_: Throwable) {
+            null
         }
-        return output.toByteArray()
     }
 
     private fun saveToDiskCache(cacheKey: String, asset: MemoryAsset) {
         try {
-            // Check disk quota and prune if necessary
             pruneDiskCacheIfNeeded()
 
             val tempFile = File(cacheDir, "$cacheKey.tmp")
@@ -342,11 +326,10 @@ class GameAssetCacheManager(private val context: Context) {
                 }
             }
 
-            // Atomic rename
             if (tempFile.exists()) {
                 tempFile.renameTo(targetFile)
             }
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
     }
 
     private fun readDiskAsset(file: File): MemoryAsset? {
@@ -368,8 +351,8 @@ class GameAssetCacheManager(private val context: Context) {
                     MemoryAsset(data, mimeType, encoding)
                 }
             }
-        } catch (_: Exception) {
-            file.delete()
+        } catch (_: Throwable) {
+            try { file.delete() } catch (_: Throwable) {}
             null
         }
     }
@@ -382,14 +365,13 @@ class GameAssetCacheManager(private val context: Context) {
                 totalSize += f.length()
             }
             if (totalSize > MAX_DISK_CACHE_BYTES) {
-                // Delete oldest 30% of files by last modified
                 val sorted = files.sortedBy { it.lastModified() }
                 val targetDeleteCount = (sorted.size * 0.3).toInt().coerceAtLeast(1)
                 for (i in 0 until targetDeleteCount) {
                     sorted[i].delete()
                 }
             }
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
     }
 
     fun clearCache() {
@@ -397,7 +379,7 @@ class GameAssetCacheManager(private val context: Context) {
             memoryCache.evictAll()
             cacheDir.deleteRecursively()
             cacheDir.mkdirs()
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
     }
 
     private fun hashUrl(url: String): String {
@@ -405,7 +387,7 @@ class GameAssetCacheManager(private val context: Context) {
             val md = MessageDigest.getInstance("SHA-256")
             val digest = md.digest(url.toByteArray(Charsets.UTF_8))
             digest.joinToString("") { "%02x".format(it) }
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             url.hashCode().toString()
         }
     }
@@ -418,7 +400,6 @@ class GameAssetCacheManager(private val context: Context) {
             }
         }
 
-        // Fallback by extension
         val lowerUrl = url.lowercase(Locale.ROOT).substringBefore('?')
         return when {
             lowerUrl.endsWith(".png") -> "image/png"

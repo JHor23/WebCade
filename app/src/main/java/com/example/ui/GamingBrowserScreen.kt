@@ -197,21 +197,31 @@ fun GamingBrowserScreen(
      * it gracefully exits back to the Home Portal instead of crashing to a blank white screen.
      */
     fun navigateBackOrHome() {
-        if (customFullscreenView != null) {
-            gamingWebClient.hideCustomView()
-            return
-        }
-        val history = webViewInstance?.copyBackForwardList()
-        if (history != null && history.currentIndex > 0) {
-            val targetIndex = history.currentIndex - 1
-            val targetUrl = history.getItemAtIndex(targetIndex)?.url ?: ""
-            if (targetUrl.isBlank() || targetUrl == "about:blank" || targetUrl.startsWith("data:text/html")) {
+        try {
+            if (customFullscreenView != null) {
+                gamingWebClient.hideCustomView()
+                return
+            }
+            val history = try { webViewInstance?.copyBackForwardList() } catch (_: Throwable) { null }
+            if (history != null && history.currentIndex > 0) {
+                val targetIndex = history.currentIndex - 1
+                val targetUrl = history.getItemAtIndex(targetIndex)?.url ?: ""
+                if (targetUrl.isBlank() || targetUrl == "about:blank" || targetUrl.startsWith("data:text/html")) {
+                    dismissUrlBar()
+                    isAtHomePortal = true
+                } else {
+                    try {
+                        webViewInstance?.goBack()
+                    } catch (_: Throwable) {
+                        dismissUrlBar()
+                        isAtHomePortal = true
+                    }
+                }
+            } else {
                 dismissUrlBar()
                 isAtHomePortal = true
-            } else {
-                webViewInstance?.goBack()
             }
-        } else {
+        } catch (_: Throwable) {
             dismissUrlBar()
             isAtHomePortal = true
         }
@@ -284,6 +294,9 @@ fun GamingBrowserScreen(
                         setOrientation(mode)
                     }
                 },
+                onBackToHome = {
+                    isAtHomePortal = true
+                },
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -299,25 +312,29 @@ fun GamingBrowserScreen(
                         }
                     },
                     update = { container ->
-                        val targetView = customFullscreenView
-                        if (targetView != null) {
-                            if (targetView.parent !== container) {
-                                (targetView.parent as? ViewGroup)?.removeView(targetView)
-                                container.removeAllViews()
-                                container.addView(
-                                    targetView,
-                                    ViewGroup.LayoutParams(
-                                        ViewGroup.LayoutParams.MATCH_PARENT,
-                                        ViewGroup.LayoutParams.MATCH_PARENT
+                        try {
+                            val targetView = customFullscreenView
+                            if (targetView != null) {
+                                if (targetView.parent !== container) {
+                                    (targetView.parent as? ViewGroup)?.removeView(targetView)
+                                    container.removeAllViews()
+                                    container.addView(
+                                        targetView,
+                                        ViewGroup.LayoutParams(
+                                            ViewGroup.LayoutParams.MATCH_PARENT,
+                                            ViewGroup.LayoutParams.MATCH_PARENT
+                                        )
                                     )
-                                )
+                                }
+                            } else {
+                                container.removeAllViews()
                             }
-                        } else {
-                            container.removeAllViews()
-                        }
+                        } catch (_: Throwable) {}
                     },
                     onReset = { container ->
-                        container.removeAllViews()
+                        try {
+                            container.removeAllViews()
+                        } catch (_: Throwable) {}
                     },
                     modifier = Modifier.fillMaxSize()
                 )
