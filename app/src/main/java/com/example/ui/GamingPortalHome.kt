@@ -1,6 +1,7 @@
 package com.example.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,8 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Button
@@ -52,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.testTag
@@ -90,6 +94,9 @@ fun GamingPortalHome(
     isAdBlockerEnabled: Boolean = true,
     blockedAdsCount: Int = 0,
     onToggleAdBlocker: () -> Unit = {},
+    isTunnelEnabled: Boolean = false,
+    onToggleTunnel: () -> Unit = {},
+    onOpenTunnelConfig: () -> Unit = {},
     onClearBrowserData: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -155,7 +162,7 @@ fun GamingPortalHome(
                                 modifier = Modifier.size(22.dp)
                             )
                         }
-                        Column(modifier = Modifier.weight(1f, fill = false)) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "WebCade Gaming Browser",
                                 color = TextPrimary,
@@ -165,13 +172,13 @@ fun GamingPortalHome(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "Full Screen • Low Latency • HW Acceleration",
+                                text = "Full Screen • Low Latency • HW Acceleration • 60-120 FPS",
                                 color = CyberCyan,
                                 fontSize = 10.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                modifier = Modifier.basicMarquee()
                             )
                         }
                     }
@@ -233,6 +240,7 @@ fun GamingPortalHome(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        // 1. Section Header: Gaming URL Bar & Clear Data
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -240,86 +248,141 @@ fun GamingPortalHome(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Language,
                                     contentDescription = "URL Bar Icon",
                                     tint = CyberCyan,
-                                    modifier = Modifier.size(17.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Text(
                                     text = "GAMING URL BAR",
                                     color = CyberCyan,
-                                    fontSize = 12.sp,
+                                    fontSize = 13.sp,
                                     fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
                                 )
                             }
 
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            // Clear Cache & Data Pill in top-right
+                            Surface(
+                                color = DarkSurfaceElevated,
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+                                modifier = Modifier
+                                    .clickable { onClearBrowserData() }
+                                    .testTag("portal_clear_cache_cookies_btn")
                             ) {
-                                // Ad-Blocker DNS Filtering Toggle
-                                Surface(
-                                    color = if (isAdBlockerEnabled) CyberCyan.copy(alpha = 0.15f) else DarkSurfaceElevated,
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = androidx.compose.foundation.BorderStroke(
-                                        1.dp,
-                                        if (isAdBlockerEnabled) CyberCyan else DarkBorder
-                                    ),
-                                    modifier = Modifier
-                                        .clickable { onToggleAdBlocker() }
-                                        .testTag("portal_adblock_toggle_btn")
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Shield,
-                                            contentDescription = "Ad-Blocker DNS Filtering",
-                                            tint = if (isAdBlockerEnabled) CyberCyan else TextMuted,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Text(
-                                            text = if (isAdBlockerEnabled) "Ad-Block DNS" else "DNS Off",
-                                            color = if (isAdBlockerEnabled) CyberCyan else TextMuted,
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteSweep,
+                                        contentDescription = "Clear Cache and Cookies",
+                                        tint = NeonPink,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Text(
+                                        text = "Clear Data",
+                                        color = TextSecondary,
+                                        fontSize = 10.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
+                            }
+                        }
 
-                                // Trash Can Icon: Clears Cache, Cookies & Browser Data
-                                Surface(
-                                    color = DarkSurfaceElevated,
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
-                                    modifier = Modifier
-                                        .clickable { onClearBrowserData() }
-                                        .testTag("portal_clear_cache_cookies_btn")
+                        // 2. Dedicated Utility Controls Row: Ad-Block DNS & Anti-DPI Encrypted Tunnel
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // Ad-Blocker DNS Filtering Toggle Pill
+                            Surface(
+                                color = if (isAdBlockerEnabled) CyberCyan.copy(alpha = 0.15f) else DarkSurfaceElevated,
+                                shape = RoundedCornerShape(10.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isAdBlockerEnabled) CyberCyan else DarkBorder
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onToggleAdBlocker() }
+                                    .testTag("portal_adblock_toggle_btn")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    Icon(
+                                        imageVector = Icons.Default.Shield,
+                                        contentDescription = "Ad-Blocker DNS Filtering",
+                                        tint = if (isAdBlockerEnabled) CyberCyan else TextMuted,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isAdBlockerEnabled) "Ad-Block: ON" else "Ad-Block: OFF",
+                                        color = if (isAdBlockerEnabled) CyberCyan else TextMuted,
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            // Anti-DPI Encrypted Tunnel Toggle Pill
+                            Surface(
+                                color = if (isTunnelEnabled) NeonGreen.copy(alpha = 0.15f) else DarkSurfaceElevated,
+                                shape = RoundedCornerShape(10.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isTunnelEnabled) NeonGreen else DarkBorder
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onToggleTunnel() }
+                                    .testTag("portal_tunnel_toggle_btn")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Security,
+                                        contentDescription = "Anti-DPI Encrypted Tunnel",
+                                        tint = if (isTunnelEnabled) NeonGreen else TextMuted,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isTunnelEnabled) "Tunnel: ON" else "Tunnel: OFF",
+                                        color = if (isTunnelEnabled) NeonGreen else TextMuted,
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .clickable { onOpenTunnelConfig() },
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.DeleteSweep,
-                                            contentDescription = "Clear Cache and Cookies",
-                                            tint = NeonPink,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Text(
-                                            text = "Clear Data",
-                                            color = TextSecondary,
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold
+                                            imageVector = Icons.Default.Settings,
+                                            contentDescription = "Configure Tunnel",
+                                            tint = if (isTunnelEnabled) NeonGreen else TextMuted,
+                                            modifier = Modifier.size(13.dp)
                                         )
                                     }
                                 }

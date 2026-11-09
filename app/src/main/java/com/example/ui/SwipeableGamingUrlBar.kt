@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,10 +44,9 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,7 +55,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -78,6 +77,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -113,6 +113,9 @@ fun SwipeableGamingUrlBar(
     onGoToHome: () -> Unit = {},
     isAdBlockerEnabled: Boolean = true,
     onToggleAdBlocker: () -> Unit = {},
+    isTunnelEnabled: Boolean = false,
+    onToggleTunnel: () -> Unit = {},
+    onOpenTunnelConfig: () -> Unit = {},
     onClearBrowserData: () -> Unit = {},
     orientationMode: ScreenOrientationMode = ScreenOrientationMode.AUTO,
     onToggleOrientationMode: () -> Unit = {},
@@ -301,7 +304,7 @@ fun SwipeableGamingUrlBar(
                                 shape = RoundedCornerShape(12.dp)
                             )
 
-                            // Primary Action Buttons Row: PASTE & GO
+                            // Primary Action Buttons Row: PASTE & LAUNCH GAME (Single-line, comfortable padding)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -317,135 +320,135 @@ fun SwipeableGamingUrlBar(
                                         .weight(1f)
                                         .height(50.dp)
                                         .testTag("url_bar_paste_btn"),
+                                    contentPadding = PaddingValues(horizontal = 8.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ContentPaste,
-                                        contentDescription = "Paste",
-                                        tint = CyberCyan,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        "PASTE URL",
-                                        color = TextPrimary,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentPaste,
+                                            contentDescription = "Paste",
+                                            tint = CyberCyan,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "PASTE",
+                                            color = TextPrimary,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
                                 }
 
                                 Button(
                                     onClick = { submit() },
                                     modifier = Modifier
-                                        .weight(1.5f)
+                                        .weight(1.3f)
                                         .height(50.dp)
                                         .testTag("url_bar_go_btn"),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = "Go",
-                                        tint = DarkBackground,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "LAUNCH GAME",
-                                        color = DarkBackground,
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 13.sp
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = "Launch",
+                                            tint = DarkBackground,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "LAUNCH GAME",
+                                            color = DarkBackground,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 13.sp,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
                                 }
                             }
 
-                            // Browser Navigation Controls Row (Back, Forward, Reload, Exit to Home)
+                            // Browser Navigation Controls Row: Back, Forward, Reload, Portal Home
+                            // Symmetrical, vertical column buttons prevent any text clipping or ugly wrapping
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Button(
-                                    onClick = onGoBack,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(48.dp)
-                                        .testTag("url_bar_back_btn"),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = "Back",
-                                        tint = if (canGoBack) CyberCyan else TextPrimary,
-                                        modifier = Modifier.size(16.dp)
+                                val navItems = listOf(
+                                    Quadruple(
+                                        "url_bar_back_btn",
+                                        Icons.Default.ArrowBack,
+                                        "Back",
+                                        if (canGoBack) CyberCyan else TextPrimary,
+                                        onGoBack
+                                    ),
+                                    Quadruple(
+                                        "url_bar_forward_btn",
+                                        Icons.Default.ArrowForward,
+                                        "Forward",
+                                        if (canGoForward) CyberCyan else TextSecondary,
+                                        onGoForward
+                                    ),
+                                    Quadruple(
+                                        "url_bar_reload_btn",
+                                        Icons.Default.Refresh,
+                                        "Reload",
+                                        CyberCyan,
+                                        { onReload(); onDismissUrlBar() }
+                                    ),
+                                    Quadruple(
+                                        "url_bar_home_btn",
+                                        Icons.Default.Home,
+                                        "Home",
+                                        NeonPurple,
+                                        { onDismissUrlBar(); onGoToHome() }
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Back", color = TextPrimary, fontSize = 12.sp)
-                                }
+                                )
 
-                                Button(
-                                    onClick = onGoForward,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(48.dp)
-                                        .testTag("url_bar_forward_btn"),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowForward,
-                                        contentDescription = "Forward",
-                                        tint = if (canGoForward) CyberCyan else TextSecondary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Forward", color = TextPrimary, fontSize = 12.sp)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        onReload()
-                                        onDismissUrlBar()
-                                    },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(48.dp)
-                                        .testTag("url_bar_reload_btn"),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "Reload",
-                                        tint = CyberCyan,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Reload", color = TextPrimary, fontSize = 12.sp)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        onDismissUrlBar()
-                                        onGoToHome()
-                                    },
-                                    modifier = Modifier
-                                        .weight(1.2f)
-                                        .height(48.dp)
-                                        .testTag("url_bar_home_btn"),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, NeonPurple.copy(alpha = 0.5f))
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Home,
-                                        contentDescription = "Home",
-                                        tint = NeonPurple,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Portal Home", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                navItems.forEach { (tag, icon, label, tint, action) ->
+                                    Button(
+                                        onClick = action,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(54.dp)
+                                            .testTag(tag),
+                                        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = label,
+                                                tint = tint,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = label,
+                                                color = TextPrimary,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -490,7 +493,7 @@ fun SwipeableGamingUrlBar(
 
                                 Text(
                                     text = when (orientationMode) {
-                                        ScreenOrientationMode.AUTO -> "Auto-Rotate"
+                                        ScreenOrientationMode.AUTO -> "Auto (Sensor)"
                                         ScreenOrientationMode.LANDSCAPE -> "Landscape"
                                         ScreenOrientationMode.PORTRAIT -> "Portrait"
                                     },
@@ -500,13 +503,14 @@ fun SwipeableGamingUrlBar(
                                 )
                             }
 
-                            // Orientation Segmented Buttons with 48dp Touch Targets
+                            // Symmetrical, vertically-stacked orientation buttons: emoji on top, clean label below
+                            // Eliminates text wrapping completely
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 val modes = listOf(
-                                    Triple(ScreenOrientationMode.AUTO, "Auto (Sensor)", "🔄"),
+                                    Triple(ScreenOrientationMode.AUTO, "Auto", "🔄"),
                                     Triple(ScreenOrientationMode.LANDSCAPE, "Landscape", "🖥️"),
                                     Triple(ScreenOrientationMode.PORTRAIT, "Portrait", "📱")
                                 )
@@ -519,22 +523,30 @@ fun SwipeableGamingUrlBar(
                                         },
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(48.dp)
+                                            .height(58.dp)
                                             .testTag("orientation_btn_${mode.name.lowercase()}"),
+                                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                                         shape = RoundedCornerShape(10.dp),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = if (isSelected) CyberCyan.copy(alpha = 0.2f) else DarkSurfaceElevated
                                         ),
                                         border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, CyberCyan) else null
                                     ) {
-                                        Text(text = emoji, fontSize = 14.sp)
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = label,
-                                            color = if (isSelected) CyberCyan else TextSecondary,
-                                            fontSize = 12.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                        )
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(text = emoji, fontSize = 20.sp)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = label,
+                                                color = if (isSelected) CyberCyan else TextSecondary,
+                                                fontSize = 12.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -605,6 +617,87 @@ fun SwipeableGamingUrlBar(
                                     colors = SwitchDefaults.colors(
                                         checkedThumbColor = CyberCyan,
                                         checkedTrackColor = CyberCyan.copy(alpha = 0.3f),
+                                        uncheckedThumbColor = TextMuted,
+                                        uncheckedTrackColor = DarkBackground
+                                    )
+                                )
+                            }
+
+                            // Anti-DPI Encrypted Tunnel Row (ISP Throttling & Inspection Bypass)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(DarkSurfaceElevated)
+                                    .clickable { onToggleTunnel() }
+                                    .testTag("bar_tunnel_toggle_row")
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Security,
+                                        contentDescription = "Anti-DPI Encrypted Tunnel",
+                                        tint = if (isTunnelEnabled) NeonGreen else TextMuted,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Column {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = "Anti-DPI Encrypted Tunnel",
+                                                color = TextPrimary,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Surface(
+                                                color = DarkBackground,
+                                                shape = RoundedCornerShape(6.dp),
+                                                border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f)),
+                                                modifier = Modifier.clickable { onOpenTunnelConfig() }
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Settings,
+                                                        contentDescription = "Configure Tunnel",
+                                                        tint = CyberCyan,
+                                                        modifier = Modifier.size(11.dp)
+                                                    )
+                                                    Text(
+                                                        text = "CONFIG",
+                                                        color = CyberCyan,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontFamily = FontFamily.Monospace
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Text(
+                                            text = if (isTunnelEnabled) "Active • Bypasses ISP DPI & match throttling" else "Disabled • Encrypted tunnel for anti-throttling",
+                                            color = if (isTunnelEnabled) NeonGreen else TextSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+
+                                Switch(
+                                    checked = isTunnelEnabled,
+                                    onCheckedChange = { onToggleTunnel() },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = NeonGreen,
+                                        checkedTrackColor = NeonGreen.copy(alpha = 0.3f),
                                         uncheckedThumbColor = TextMuted,
                                         uncheckedTrackColor = DarkBackground
                                     )
@@ -702,7 +795,9 @@ fun SwipeableGamingUrlBar(
                                             Text(
                                                 text = "${mode.iconEmoji} ${mode.label}",
                                                 fontSize = 12.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         },
                                         leadingIcon = if (isSelected) {
@@ -895,41 +990,62 @@ fun SwipeableGamingUrlBar(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Bottom Sticky Resume Game Action Button
+                // Bottom Sticky Resume Game Action: Uniform, perfectly centered Play icon & text
                 Spacer(modifier = Modifier.height(10.dp))
-                Button(
-                    onClick = onDismissUrlBar,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .widthIn(max = 720.dp)
-                        .height(56.dp)
-                        .testTag("resume_game_bottom_btn"),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
+                        .widthIn(max = 720.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Resume Playing",
-                        tint = DarkBackground,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "RESUME GAME",
-                            color = DarkBackground,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Black
-                        )
-                        Text(
-                            text = "Tap here or press Phone Back button to resume",
-                            color = DarkBackground.copy(alpha = 0.75f),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                    Button(
+                        onClick = onDismissUrlBar,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .testTag("resume_game_bottom_btn"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Resume Playing",
+                                tint = DarkBackground,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "RESUME GAME",
+                                color = DarkBackground,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Tap button or press Phone Back to resume playing",
+                        color = TextMuted,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
     }
 }
+
+private data class Quadruple<A, B, C, D, E>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D,
+    val fifth: E
+)

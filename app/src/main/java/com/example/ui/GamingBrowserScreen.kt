@@ -17,11 +17,32 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import com.example.ui.theme.DarkSurface
+import com.example.ui.theme.DarkSurfaceElevated
+import com.example.ui.theme.TextMuted
+import com.example.ui.theme.TextPrimary
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +63,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.Toast
 import com.example.browser.AdBlockManager
 import com.example.browser.BrowserDataManager
+import com.example.browser.EncryptedTunnelManager
 import com.example.browser.GameAssetCacheManager
 import com.example.browser.GamingWebClient
 import com.example.browser.GamingWebViewContainer
@@ -78,11 +100,23 @@ fun GamingBrowserScreen(
     var isPerformanceHudEnabled by remember { mutableStateOf(false) }
     var isMappingDialogOpen by remember { mutableStateOf(false) }
     var isClearDataDialogOpen by remember { mutableStateOf(false) }
+    var showNavigationHint by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showNavigationHint) {
+        if (showNavigationHint) {
+            delay(5000L) // 5 seconds (extra 3s for easy, comfortable reading)
+            showNavigationHint = false
+        }
+    }
 
     val adBlockManager = remember { AdBlockManager(context) }
     val gameAssetCacheManager = remember { GameAssetCacheManager(context) }
     val isAdBlockerEnabled by adBlockManager.isAdBlockerEnabled.collectAsState()
     val blockedAdsCount by adBlockManager.blockedAdsCount.collectAsState()
+
+    val encryptedTunnelManager = remember { EncryptedTunnelManager(context) }
+    val isTunnelEnabled by encryptedTunnelManager.isTunnelEnabled.collectAsState()
+    var isTunnelConfigDialogOpen by remember { mutableStateOf(false) }
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var customFullscreenView by remember { mutableStateOf<View?>(null) }
@@ -150,6 +184,16 @@ fun GamingBrowserScreen(
         }
     }
 
+    fun toggleTunnel() {
+        val enabled = encryptedTunnelManager.toggleTunnel(webViewInstance)
+        val msg = if (enabled) {
+            "Anti-DPI Encrypted Tunnel: ON (ISP Throttling & DPI Bypass Active)"
+        } else {
+            "Anti-DPI Encrypted Tunnel: OFF (Direct Connection)"
+        }
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+    }
+
     fun handleClearBrowserData(clearHistory: Boolean) {
         BrowserDataManager.clearAllBrowserData(
             context = context,
@@ -187,7 +231,7 @@ fun GamingBrowserScreen(
         if (webViewInstance != null && webViewInstance?.url != formatted) {
             webViewInstance?.loadUrl(formatted)
         }
-        Toast.makeText(context, "Press Phone Back button anytime for URL bar & settings", Toast.LENGTH_SHORT).show()
+        showNavigationHint = true
     }
 
     /**
@@ -264,6 +308,9 @@ fun GamingBrowserScreen(
             isAdBlockerEnabled = isAdBlockerEnabled,
             blockedAdsCount = blockedAdsCount,
             onToggleAdBlocker = { toggleAdBlocker() },
+            isTunnelEnabled = isTunnelEnabled,
+            onToggleTunnel = { toggleTunnel() },
+            onOpenTunnelConfig = { isTunnelConfigDialogOpen = true },
             onClearBrowserData = { isClearDataDialogOpen = true },
             modifier = modifier
         )
@@ -388,6 +435,9 @@ fun GamingBrowserScreen(
                     },
                     isAdBlockerEnabled = isAdBlockerEnabled,
                     onToggleAdBlocker = { toggleAdBlocker() },
+                    isTunnelEnabled = isTunnelEnabled,
+                    onToggleTunnel = { toggleTunnel() },
+                    onOpenTunnelConfig = { isTunnelConfigDialogOpen = true },
                     onClearBrowserData = { isClearDataDialogOpen = true },
                     orientationMode = orientationMode,
                     onToggleOrientationMode = { toggleOrientation() },
@@ -397,6 +447,67 @@ fun GamingBrowserScreen(
                     canGoForward = webState.canGoForward,
                     modifier = Modifier.fillMaxSize()
                 )
+            }
+
+            // 5. Centered Navigation Hint Notification (stays for 5s, centered on screen, centered text in bubble)
+            AnimatedVisibility(
+                visible = showNavigationHint && !isUrlBarVisible && !isHubOpen,
+                enter = fadeIn() + scaleIn(initialScale = 0.85f),
+                exit = fadeOut() + scaleOut(targetScale = 0.85f),
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .padding(horizontal = 32.dp)
+                        .widthIn(max = 420.dp)
+                        .clickable { showNavigationHint = false }
+                        .testTag("nav_hint_bubble"),
+                    shape = RoundedCornerShape(22.dp),
+                    color = DarkSurface.copy(alpha = 0.95f),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, CyberCyan.copy(alpha = 0.85f)),
+                    shadowElevation = 16.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(DarkSurfaceElevated, CircleShape)
+                                .border(1.dp, CyberCyan.copy(alpha = 0.5f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = CyberCyan,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Press Back at any time to open Game Controls & Settings",
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 22.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Tap to dismiss",
+                            color = TextMuted,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
 
             // 5. Performance & Telemetry HUD (Optional)
@@ -509,6 +620,14 @@ fun GamingBrowserScreen(
             onConfirmClear = { clearHistory ->
                 handleClearBrowserData(clearHistory)
             }
+        )
+    }
+
+    // 11. Anti-DPI Encrypted Tunnel Configuration Dialog
+    if (isTunnelConfigDialogOpen) {
+        TunnelConfigDialog(
+            tunnelManager = encryptedTunnelManager,
+            onDismiss = { isTunnelConfigDialogOpen = false }
         )
     }
 }

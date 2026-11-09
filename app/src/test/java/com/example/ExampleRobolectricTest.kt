@@ -205,5 +205,44 @@ class ExampleRobolectricTest {
     assertFalse(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/auth/login")))
     assertFalse(assetManager.isCacheableGameAsset(createMockRequest("https://game.cdn.com/socket.io/?EIO=4")))
   }
+
+  @Test
+  fun `test EncryptedTunnelManager toggling, mode switching, and proxy rule generation`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val tunnelManager = com.example.browser.EncryptedTunnelManager(context)
+
+    // Test default initial state
+    assertNotNull(tunnelManager)
+    val initialEnabled = tunnelManager.isTunnelEnabled.value
+
+    // Test toggle
+    val toggled = tunnelManager.toggleTunnel()
+    assertEquals(!initialEnabled, toggled)
+    assertEquals(toggled, tunnelManager.isTunnelEnabled.value)
+
+    // Test mode switching to WARP_BRIDGE
+    tunnelManager.setTunnelMode(com.example.browser.TunnelMode.WARP_BRIDGE)
+    assertEquals(com.example.browser.TunnelMode.WARP_BRIDGE, tunnelManager.tunnelMode.value)
+    assertEquals("socks5://127.0.0.1:40000", tunnelManager.getActiveProxyRule())
+
+    // Test mode switching to SECURE_ENCRYPTED_DOH
+    tunnelManager.setTunnelMode(com.example.browser.TunnelMode.SECURE_ENCRYPTED_DOH)
+    assertEquals(com.example.browser.TunnelMode.SECURE_ENCRYPTED_DOH, tunnelManager.tunnelMode.value)
+    assertEquals("https://1.1.1.1:443", tunnelManager.getActiveProxyRule())
+
+    // Test custom endpoint configuration
+    tunnelManager.updateCustomConfig("socks5", "192.168.1.100", 1080)
+    tunnelManager.setTunnelMode(com.example.browser.TunnelMode.CUSTOM)
+    assertEquals(com.example.browser.TunnelMode.CUSTOM, tunnelManager.tunnelMode.value)
+    assertEquals("socks5://192.168.1.100:1080", tunnelManager.getActiveProxyRule())
+
+    // Test custom HTTPS endpoint
+    tunnelManager.updateCustomConfig("https", "myvpn.proxy.net", 8443)
+    assertEquals("https://myvpn.proxy.net:8443", tunnelManager.getActiveProxyRule())
+
+    // Reset back to disabled
+    tunnelManager.setTunnelEnabled(false)
+    assertFalse(tunnelManager.isTunnelEnabled.value)
+  }
 }
 
