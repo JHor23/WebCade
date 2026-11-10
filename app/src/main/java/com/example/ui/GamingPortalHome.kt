@@ -125,6 +125,8 @@ fun GamingPortalHome(
         }
     }
 
+    val cutoutInsets = rememberMenuCutoutInsets()
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -133,96 +135,39 @@ fun GamingPortalHome(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(
+                    start = 16.dp + cutoutInsets.start,
+                    top = 14.dp + cutoutInsets.top,
+                    end = 16.dp + cutoutInsets.end,
+                    bottom = 14.dp + cutoutInsets.bottom
+                ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header: Title & Controller Status (compact and integrated, no empty void)
+            // Header: Title & Marquee Subtitle (full-width, clean and modern)
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.weight(1f, fill = false)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(CyberCyan.copy(alpha = 0.15f), CircleShape)
-                                .border(1.5.dp, CyberCyan, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SportsEsports,
-                                contentDescription = "WebCade Logo",
-                                tint = CyberCyan,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "WebCade Gaming Browser",
-                                color = TextPrimary,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Black,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Full Screen • Low Latency • HW Acceleration • 60-120 FPS",
-                                color = CyberCyan,
-                                fontSize = 10.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                modifier = Modifier.basicMarquee()
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Controller status pill (clickable to configure mapping)
-                    Surface(
-                        color = DarkSurfaceElevated,
-                        shape = RoundedCornerShape(20.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (gamepadStatus.isConnected) CyberCyan else DarkBorder
-                        ),
-                        modifier = Modifier
-                            .clickable { onOpenControllerMapping() }
-                            .testTag("portal_controller_config_btn")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(
-                                        if (gamepadStatus.isConnected) NeonGreen else TextMuted,
-                                        CircleShape
-                                    )
-                            )
-                            Text(
-                                text = if (gamepadStatus.isConnected) {
-                                    if (controllerMode == ControllerMode.DEDICATED_GAMEPAD) "Pad: Direct" else "Pad: KBM"
-                                } else {
-                                    "Configure Pad"
-                                },
-                                color = if (gamepadStatus.isConnected) CyberCyan else TextSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1
-                            )
-                        }
-                    }
+                    Text(
+                        text = "WebCade Gaming Browser",
+                        color = TextPrimary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Full Screen • Low Latency • HW Acceleration • 60-120 FPS",
+                        color = CyberCyan,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        modifier = Modifier.basicMarquee()
+                    )
                 }
             }
 
@@ -297,11 +242,11 @@ fun GamingPortalHome(
                             }
                         }
 
-                        // 2. Dedicated Utility Controls Row: Ad-Block DNS & Anti-DPI Encrypted Tunnel
+                        // 2. Dedicated Utility Controls Row: Ad-Block, Anti-DPI Tunnel & Gamepad Config
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             // Ad-Blocker DNS Filtering Toggle Pill
                             Surface(
@@ -317,7 +262,7 @@ fun GamingPortalHome(
                                     .testTag("portal_adblock_toggle_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
@@ -325,15 +270,17 @@ fun GamingPortalHome(
                                         imageVector = Icons.Default.Shield,
                                         contentDescription = "Ad-Blocker DNS Filtering",
                                         tint = if (isAdBlockerEnabled) CyberCyan else TextMuted,
-                                        modifier = Modifier.size(15.dp)
+                                        modifier = Modifier.size(14.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = if (isAdBlockerEnabled) "Ad-Block: ON" else "Ad-Block: OFF",
+                                        text = if (isAdBlockerEnabled) "AdBlock: ON" else "AdBlock",
                                         color = if (isAdBlockerEnabled) CyberCyan else TextMuted,
                                         fontSize = 11.sp,
                                         fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                             }
@@ -352,7 +299,7 @@ fun GamingPortalHome(
                                     .testTag("portal_tunnel_toggle_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
@@ -360,20 +307,22 @@ fun GamingPortalHome(
                                         imageVector = Icons.Default.Security,
                                         contentDescription = "Anti-DPI Encrypted Tunnel",
                                         tint = if (isTunnelEnabled) NeonGreen else TextMuted,
-                                        modifier = Modifier.size(15.dp)
+                                        modifier = Modifier.size(14.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
                                     Text(
-                                        text = if (isTunnelEnabled) "Tunnel: ON" else "Tunnel: OFF",
+                                        text = if (isTunnelEnabled) "Tunnel: ON" else "Tunnel",
                                         color = if (isTunnelEnabled) NeonGreen else TextMuted,
                                         fontSize = 11.sp,
                                         fontFamily = FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(2.dp))
                                     Box(
                                         modifier = Modifier
-                                            .size(20.dp)
+                                            .size(18.dp)
                                             .clip(CircleShape)
                                             .clickable { onOpenTunnelConfig() },
                                         contentAlignment = Alignment.Center
@@ -382,7 +331,56 @@ fun GamingPortalHome(
                                             imageVector = Icons.Default.Settings,
                                             contentDescription = "Configure Tunnel",
                                             tint = if (isTunnelEnabled) NeonGreen else TextMuted,
-                                            modifier = Modifier.size(13.dp)
+                                            modifier = Modifier.size(11.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Gamepad & Key Mapping Configuration Pill
+                            Surface(
+                                color = if (gamepadStatus.isConnected) CyberCyan.copy(alpha = 0.15f) else DarkSurfaceElevated,
+                                shape = RoundedCornerShape(10.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (gamepadStatus.isConnected) CyberCyan else DarkBorder
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onOpenControllerMapping() }
+                                    .testTag("portal_controller_config_btn")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SportsEsports,
+                                        contentDescription = "Gamepad Mapping",
+                                        tint = if (gamepadStatus.isConnected) CyberCyan else TextMuted,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (gamepadStatus.isConnected) {
+                                            if (controllerMode == ControllerMode.DEDICATED_GAMEPAD) "Pad: OK" else "Pad: KBM"
+                                        } else {
+                                            "Gamepad"
+                                        },
+                                        color = if (gamepadStatus.isConnected) CyberCyan else TextMuted,
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                    if (gamepadStatus.isConnected) {
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .background(NeonGreen, CircleShape)
                                         )
                                     }
                                 }
@@ -499,50 +497,83 @@ fun GamingPortalHome(
                             }
                         }
 
-                        // User-Agent Selector Bar (uses LazyRow so "Mobile" never wraps vertically)
-                        Row(
+                        // User-Agent Selector Bar: Segmented 3-Button Control (100% visible across full card width)
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = "UA Mode:",
-                                color = TextSecondary,
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.weight(1f)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                items(UserAgentMode.values()) { mode ->
+                                Text(
+                                    text = "USER AGENT MODE",
+                                    color = TextMuted,
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Text(
+                                    text = when (selectedUserAgent) {
+                                        UserAgentMode.DESKTOP_CHROME -> "Windows 11"
+                                        UserAgentMode.CHROME_OS -> "ChromeOS"
+                                        UserAgentMode.MOBILE -> "Mobile Android"
+                                    },
+                                    color = NeonPurple,
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(DarkSurfaceElevated, RoundedCornerShape(10.dp))
+                                    .border(1.dp, DarkBorder, RoundedCornerShape(10.dp))
+                                    .padding(3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                UserAgentMode.entries.forEach { mode ->
                                     val isSelected = selectedUserAgent == mode
-                                    FilterChip(
-                                        selected = isSelected,
+                                    val shortLabel = when (mode) {
+                                        UserAgentMode.DESKTOP_CHROME -> "Desktop"
+                                        UserAgentMode.CHROME_OS -> "ChromeOS"
+                                        UserAgentMode.MOBILE -> "Mobile"
+                                    }
+
+                                    Surface(
                                         onClick = { onUserAgentChanged(mode) },
-                                        label = {
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(38.dp)
+                                            .testTag("portal_ua_${mode.name.lowercase()}"),
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (isSelected) NeonPurple else Color.Transparent,
+                                        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, NeonPurple.copy(alpha = 0.8f)) else null
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxSize(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
                                             Text(
-                                                text = when (mode) {
-                                                    UserAgentMode.DESKTOP_CHROME -> "Desktop (Win 11)"
-                                                    UserAgentMode.CHROME_OS -> "ChromeOS"
-                                                    UserAgentMode.MOBILE -> "Mobile"
-                                                },
-                                                fontSize = 11.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                text = mode.iconEmoji,
+                                                fontSize = 13.sp
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text(
+                                                text = shortLabel,
+                                                color = if (isSelected) Color.White else TextSecondary,
+                                                fontSize = 12.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                 maxLines = 1,
                                                 softWrap = false
                                             )
-                                        },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = NeonPurple,
-                                            selectedLabelColor = Color.White,
-                                            containerColor = DarkSurfaceElevated,
-                                            labelColor = TextSecondary
-                                        ),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.testTag("portal_ua_${mode.name.lowercase()}")
-                                    )
+                                        }
+                                    }
                                 }
                             }
                         }

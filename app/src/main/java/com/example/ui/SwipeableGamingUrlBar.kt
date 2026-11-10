@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -146,6 +147,8 @@ fun SwipeableGamingUrlBar(
         }
     }
 
+    val cutoutInsets = rememberMenuCutoutInsets()
+
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 4 }),
@@ -161,7 +164,12 @@ fun SwipeableGamingUrlBar(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                    .padding(
+                        start = 20.dp + cutoutInsets.start,
+                        top = 16.dp + cutoutInsets.top,
+                        end = 20.dp + cutoutInsets.end,
+                        bottom = 16.dp + cutoutInsets.bottom
+                    ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Top Header Row: Title, Current Site Status, and Resume Button
@@ -646,44 +654,13 @@ fun SwipeableGamingUrlBar(
                                         tint = if (isTunnelEnabled) NeonGreen else TextMuted,
                                         modifier = Modifier.size(24.dp)
                                     )
-                                    Column {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Text(
-                                                text = "Anti-DPI Encrypted Tunnel",
-                                                color = TextPrimary,
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Surface(
-                                                color = DarkBackground,
-                                                shape = RoundedCornerShape(6.dp),
-                                                border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f)),
-                                                modifier = Modifier.clickable { onOpenTunnelConfig() }
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Settings,
-                                                        contentDescription = "Configure Tunnel",
-                                                        tint = CyberCyan,
-                                                        modifier = Modifier.size(11.dp)
-                                                    )
-                                                    Text(
-                                                        text = "CONFIG",
-                                                        color = CyberCyan,
-                                                        fontSize = 9.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontFamily = FontFamily.Monospace
-                                                    )
-                                                }
-                                            }
-                                        }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Anti-DPI Encrypted Tunnel",
+                                            color = TextPrimary,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
                                         Text(
                                             text = if (isTunnelEnabled) "Active • Bypasses ISP DPI & match throttling" else "Disabled • Encrypted tunnel for anti-throttling",
                                             color = if (isTunnelEnabled) NeonGreen else TextSecondary,
@@ -692,16 +669,40 @@ fun SwipeableGamingUrlBar(
                                     }
                                 }
 
-                                Switch(
-                                    checked = isTunnelEnabled,
-                                    onCheckedChange = { onToggleTunnel() },
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = NeonGreen,
-                                        checkedTrackColor = NeonGreen.copy(alpha = 0.3f),
-                                        uncheckedThumbColor = TextMuted,
-                                        uncheckedTrackColor = DarkBackground
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        onClick = { onOpenTunnelConfig() },
+                                        color = CyberCyan.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f)),
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .testTag("url_bar_tunnel_config_btn")
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.Settings,
+                                                contentDescription = "Configure Tunnel",
+                                                tint = CyberCyan,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Switch(
+                                        checked = isTunnelEnabled,
+                                        onCheckedChange = { onToggleTunnel() },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = NeonGreen,
+                                            checkedTrackColor = NeonGreen.copy(alpha = 0.3f),
+                                            uncheckedThumbColor = TextMuted,
+                                            uncheckedTrackColor = DarkBackground
+                                        )
                                     )
-                                )
+                                }
                             }
 
                             // Clear Cache & Cookies Button
@@ -991,7 +992,7 @@ fun SwipeableGamingUrlBar(
                 }
 
                 // Bottom Sticky Resume Game Action: Uniform, perfectly centered Play icon & text
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1002,9 +1003,10 @@ fun SwipeableGamingUrlBar(
                         onClick = onDismissUrlBar,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp)
+                            .heightIn(min = 48.dp, max = 52.dp)
                             .testTag("resume_game_bottom_btn"),
                         shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(vertical = 10.dp, horizontal = 16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
                     ) {
                         Row(
@@ -1015,7 +1017,7 @@ fun SwipeableGamingUrlBar(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = "Resume Playing",
                                 tint = DarkBackground,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -1028,9 +1030,9 @@ fun SwipeableGamingUrlBar(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Tap button or press Phone Back to resume playing",
+                        text = "Tap button or press Back to resume playing.",
                         color = TextMuted,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
