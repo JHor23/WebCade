@@ -9,6 +9,7 @@ Whether you're streaming AAA titles, jumping into browser-based MMORPGs, or runn
 ## ✨ Key Features
 
 *   **🌐 Gaming URL Bar & Quick Launch:** Instantly jump into your favorite web games, browser-based MMORPGs (like *PokéFable Online*), and web tools with dedicated user-agent toggles (Desktop Win 11, ChromeOS, Mobile).
+*   **🔒 Anti-DPI Encrypted Tunnel:** Bypass ISP throttling, Deep Packet Inspection (DPI), and stream blocks using built-in encrypted tunneling modes, complete with live latency testing.
 *   **🛡️ DNS Ad-Blocking & Privacy:** Built-in DNS filtering toggle to block invasive ads, pop-ups, and tracking scripts, ensuring faster page load times and uninterrupted gameplay.
 *   **☁️ Cloud Gaming Hub:** Integrated quick-access dashboards optimized for major cloud platforms:
     *   Xbox Cloud Gaming (xCloud)
@@ -18,6 +19,16 @@ Whether you're streaming AAA titles, jumping into browser-based MMORPGs, or runn
     *   Web & 3D WebGL Games (e.g., *Krunker.io*)
 *   **🎮 Advanced Controller Mode & Mapping:** Native W3C Gamepad API passthrough that routes physical controller inputs straight to HTML5 and WebRTC layers, offering dedicated gamepad support or keyboard/mouse emulation for games without native controller compatibility.
 *   **📱 Immersive Full-Screen Layout:** Clean, zero-GUI viewport during gameplay with a quick swipe-to-hide navigation bar for total visual immersion.
+
+---
+
+## 🔒 Anti-DPI Encrypted Tunnel (ISP Throttling Bypass)
+
+WebCade includes a built-in **Anti-DPI Encrypted Tunnel** designed to route game and web traffic safely around ISP Deep Packet Inspection (DPI) throttling or live-stream blocks:
+*   **Cloudflare WARP / 1.1.1.1:** Routes all traffic through a local Cloudflare WARP SOCKS5 tunnel (port 40000) for fast, low-overhead encryption.
+*   **Anti-DPI Encrypted Proxy:** Utilizes an encrypted TLS tunnel engineered to defeat ISP SNI inspection and DNS poisoning.
+*   **Custom Proxy (SOCKS5/HTTPS):** Supports user-defined WireGuard SOCKS5 or private VPS proxy endpoints for full routing control.
+*   **Built-in Latency Diagnostics:** Features a one-tap **Test Tunnel** tool to measure active tunnel latency in real time before launching a session.
 
 ---
 
