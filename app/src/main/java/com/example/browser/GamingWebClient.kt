@@ -31,7 +31,8 @@ data class WebState(
 class GamingWebClient(
     val adBlockManager: AdBlockManager,
     val gameAssetCacheManager: GameAssetCacheManager,
-    private val onCustomViewChanged: (View?, WebChromeClient.CustomViewCallback?) -> Unit
+    private val onCustomViewChanged: (View?, WebChromeClient.CustomViewCallback?) -> Unit,
+    private val onUnresolvableUrl: (failingUrl: String) -> Boolean = { false }
 ) {
     private val _webState = MutableStateFlow(WebState())
     val webState: StateFlow<WebState> = _webState.asStateFlow()
@@ -109,6 +110,13 @@ class GamingWebClient(
         ) {
             super.onReceivedError(view, request, error)
             if (request?.isForMainFrame == true) {
+                val errorCode = error?.errorCode
+                val description = error?.description?.toString() ?: ""
+                val failingUrl = request.url?.toString() ?: ""
+
+                if (GamingWebClient.isIncorrectUrlError(errorCode, description) && onUnresolvableUrl(failingUrl)) {
+                    return
+                }
                 _webState.value = _webState.value.copy(
                     isLoading = false,
                     error = error?.description?.toString() ?: "Network connection issue"
@@ -180,5 +188,17 @@ class GamingWebClient(
 
     fun hideCustomView() {
         webChromeClient.onHideCustomView()
+    }
+
+    companion object {
+        fun isIncorrectUrlError(errorCode: Int?, description: String?): Boolean {
+            val desc = description ?: ""
+            return errorCode == WebViewClient.ERROR_HOST_LOOKUP ||
+                errorCode == WebViewClient.ERROR_BAD_URL ||
+                errorCode == WebViewClient.ERROR_UNSUPPORTED_SCHEME ||
+                desc.contains("ERR_NAME_NOT_RESOLVED", ignoreCase = true) ||
+                desc.contains("ERR_INVALID_URL", ignoreCase = true) ||
+                desc.contains("ERR_NAME_RESOLUTION_FAILED", ignoreCase = true)
+        }
     }
 }

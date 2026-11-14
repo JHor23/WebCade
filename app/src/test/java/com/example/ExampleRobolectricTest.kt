@@ -244,5 +244,94 @@ class ExampleRobolectricTest {
     tunnelManager.setTunnelEnabled(false)
     assertFalse(tunnelManager.isTunnelEnabled.value)
   }
+
+  @Test
+  fun `test UrlHistoryManager resolves valid URLs directly and incorrect URLs to Google search`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val urlHistoryManager = com.example.model.UrlHistoryManager(context)
+
+    // Valid URLs should resolve directly
+    assertEquals("https://xbox.com/play", urlHistoryManager.formatUrl("xbox.com/play"))
+    assertEquals("https://krunker.io", urlHistoryManager.formatUrl("  krunker.io  "))
+    assertEquals("https://www.geforcenow.com", urlHistoryManager.formatUrl("HTTPS://www.geforcenow.com"))
+    assertEquals("http://localhost:8080/game", urlHistoryManager.formatUrl("http://localhost:8080/game"))
+    assertEquals("https://192.168.1.10:3000", urlHistoryManager.formatUrl("192.168.1.10:3000"))
+
+    // Incorrect / malformed URLs and plain search terms should open Google search results
+    assertEquals(
+      "https://www.google.com/search?q=xbox+cloud+gaming",
+      urlHistoryManager.formatUrl("xbox cloud gaming")
+    )
+    assertEquals(
+      "https://www.google.com/search?q=krunker",
+      urlHistoryManager.formatUrl("krunker")
+    )
+    assertEquals(
+      "https://www.google.com/search?q=www.xbox%2Ccom",
+      urlHistoryManager.formatUrl("www.xbox,com")
+    )
+    assertEquals(
+      "https://www.google.com/search?q=htp%3A%2F%2Fxbox.com",
+      urlHistoryManager.formatUrl("htp://xbox.com")
+    )
+    assertEquals(
+      "https://www.google.com/search?q=https%3A%2F%2Fbad..url.com",
+      urlHistoryManager.formatUrl("https://bad..url.com")
+    )
+    assertEquals(
+      "https://www.google.com/search?q=xbox.c",
+      urlHistoryManager.formatUrl("xbox.c")
+    )
+    assertEquals(
+      "https://www.google.com/search?q=xbox.",
+      urlHistoryManager.formatUrl("xbox.")
+    )
+    assertEquals(
+      "https://www.google.com/search?q=123.456",
+      urlHistoryManager.formatUrl("123.456")
+    )
+    assertEquals("", urlHistoryManager.formatUrl("   "))
+  }
+
+  @Test
+  fun `test UrlHistoryManager addUrl and removeUrl manage recent history`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val urlHistoryManager = com.example.model.UrlHistoryManager(context)
+    urlHistoryManager.clearHistory()
+
+    urlHistoryManager.addUrl("https://nonexistent12345.com")
+    assertTrue(urlHistoryManager.getRecentUrls().contains("https://nonexistent12345.com"))
+
+    urlHistoryManager.removeUrl("https://nonexistent12345.com")
+    assertFalse(urlHistoryManager.getRecentUrls().contains("https://nonexistent12345.com"))
+  }
+
+  @Test
+  fun `test GamingWebClient identifies incorrect or unresolvable URL errors`() {
+    assertTrue(
+      com.example.browser.GamingWebClient.isIncorrectUrlError(
+        android.webkit.WebViewClient.ERROR_HOST_LOOKUP,
+        "net::ERR_NAME_NOT_RESOLVED"
+      )
+    )
+    assertTrue(
+      com.example.browser.GamingWebClient.isIncorrectUrlError(
+        android.webkit.WebViewClient.ERROR_BAD_URL,
+        "net::ERR_INVALID_URL"
+      )
+    )
+    assertTrue(
+      com.example.browser.GamingWebClient.isIncorrectUrlError(
+        null,
+        "net::ERR_NAME_RESOLUTION_FAILED"
+      )
+    )
+    assertFalse(
+      com.example.browser.GamingWebClient.isIncorrectUrlError(
+        android.webkit.WebViewClient.ERROR_TIMEOUT,
+        "net::ERR_CONNECTION_TIMED_OUT"
+      )
+    )
+  }
 }
 

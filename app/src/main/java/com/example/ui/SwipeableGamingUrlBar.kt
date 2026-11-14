@@ -137,12 +137,7 @@ fun SwipeableGamingUrlBar(
     fun submit() {
         val trimmed = urlInputText.trim()
         if (trimmed.isNotEmpty()) {
-            val finalUrl = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-                "https://$trimmed"
-            } else {
-                trimmed
-            }
-            onNavigateToUrl(finalUrl, userAgentMode)
+            onNavigateToUrl(trimmed, userAgentMode)
             onDismissUrlBar()
         }
     }

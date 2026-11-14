@@ -2,6 +2,7 @@ package com.example.ui
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -120,6 +121,8 @@ fun GamingBrowserScreen(
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var customFullscreenView by remember { mutableStateOf<View?>(null) }
+    var lastLaunchedRawInput by rememberSaveable { mutableStateOf("") }
+    var didFallbackToGoogleForCurrentLaunch by remember { mutableStateOf(false) }
 
     fun setOrientation(newMode: ScreenOrientationMode) {
         orientationMode = newMode
@@ -164,6 +167,40 @@ fun GamingBrowserScreen(
                         ScreenOrientationMode.LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                         ScreenOrientationMode.PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
                     }
+                }
+            },
+            onUnresolvableUrl = { failingUrl ->
+                val failingHost = try {
+                    Uri.parse(failingUrl).host?.lowercase() ?: ""
+                } catch (_: Throwable) {
+                    ""
+                }
+                val isGoogleHost = failingHost == "google.com" || failingHost.endsWith(".google.com")
+                if (!didFallbackToGoogleForCurrentLaunch && !isGoogleHost && failingUrl.isNotBlank()) {
+                    didFallbackToGoogleForCurrentLaunch = true
+                    val currentHost = try {
+                        Uri.parse(currentUrl).host?.lowercase() ?: ""
+                    } catch (_: Throwable) {
+                        ""
+                    }
+                    val searchText = if (lastLaunchedRawInput.isNotBlank() &&
+                        (currentHost.isEmpty() || currentHost == failingHost)
+                    ) {
+                        lastLaunchedRawInput
+                    } else {
+                        failingUrl
+                            .removePrefix("https://")
+                            .removePrefix("http://")
+                            .removeSuffix("/")
+                    }
+                    val googleSearchUrl = UrlHistoryManager.buildGoogleSearchUrl(searchText)
+                    urlHistoryManager.removeUrl(currentUrl)
+                    recentUrls = urlHistoryManager.getRecentUrls()
+                    currentUrl = googleSearchUrl
+                    adBlockManager.setCurrentGameHost(googleSearchUrl)
+                    true
+                } else {
+                    false
                 }
             }
         )
@@ -220,7 +257,11 @@ fun GamingBrowserScreen(
     }
 
     fun launchUrl(url: String, ua: UserAgentMode) {
-        val formatted = urlHistoryManager.formatUrl(url)
+        val cleanRaw = url.trim()
+        if (cleanRaw.isEmpty()) return
+        lastLaunchedRawInput = cleanRaw
+        didFallbackToGoogleForCurrentLaunch = false
+        val formatted = urlHistoryManager.formatUrl(cleanRaw)
         urlHistoryManager.addUrl(formatted)
         recentUrls = urlHistoryManager.getRecentUrls()
         currentUrl = formatted

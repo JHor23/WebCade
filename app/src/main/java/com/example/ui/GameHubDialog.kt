@@ -121,12 +121,7 @@ fun GameHubDialog(
     fun submitUrl(input: String) {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return
-        val finalUrl = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-            "https://$trimmed"
-        } else {
-            trimmed
-        }
-        onLoadUrl(finalUrl, userAgentMode)
+        onLoadUrl(trimmed, userAgentMode)
         onDismiss()
     }
 

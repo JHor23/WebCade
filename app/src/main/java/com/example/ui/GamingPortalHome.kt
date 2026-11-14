@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -103,16 +104,12 @@ fun GamingPortalHome(
     var urlInput by remember { mutableStateOf("") }
     val clipboardManager = LocalClipboardManager.current
     var selectedCategory by remember { mutableStateOf("All") }
+    var isAboutMeOpen by remember { mutableStateOf(false) }
 
     fun submitUrl(input: String) {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return
-        val finalUrl = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-            "https://$trimmed"
-        } else {
-            trimmed
-        }
-        onLaunchUrl(finalUrl, selectedUserAgent)
+        onLaunchUrl(trimmed, selectedUserAgent)
     }
 
     val categories = listOf("All", "Cloud Streaming", "Browser Games", "Diagnostics")
@@ -143,31 +140,62 @@ fun GamingPortalHome(
                 ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header: Title & Marquee Subtitle (full-width, clean and modern)
+            // Header: Title & Marquee Subtitle + Top-Right "i" About Me Button
             item {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "WebCade Gaming Browser",
-                        color = TextPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "Full Screen • Low Latency • HW Acceleration • 60-120 FPS",
-                        color = CyberCyan,
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        modifier = Modifier.basicMarquee()
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text(
+                            text = "WebCade Gaming Browser",
+                            color = TextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Full Screen • Low Latency • HW Acceleration • 60-120 FPS",
+                            color = CyberCyan,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            modifier = Modifier.basicMarquee()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = { isAboutMeOpen = true },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("portal_about_me_btn")
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(DarkSurfaceElevated)
+                                .border(1.2.dp, CyberCyan.copy(alpha = 0.65f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = "About Me",
+                                tint = CyberCyan,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -769,6 +797,13 @@ fun GamingPortalHome(
                     }
                 }
             }
+        }
+
+        if (isAboutMeOpen) {
+            AboutMeDialog(
+                onDismiss = { isAboutMeOpen = false },
+                onOpenUrlInBrowser = { url -> onLaunchUrl(url, selectedUserAgent) }
+            )
         }
     }
 }
