@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,7 +52,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -62,6 +60,34 @@ import com.example.BuildConfig
 import com.example.R
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.NeonPurple
+
+private data class AboutMeEntry(
+    val title: String,
+    val description: String
+)
+
+private val ABOUT_ME_ENTRIES = listOf(
+    AboutMeEntry(
+        title = "• Not Your Average Dev:",
+        description = "Powered by caffeine, dad jokes, & a healthy dose of Deadpool-style sarcasm."
+    ),
+    AboutMeEntry(
+        title = "• Indie App Builder:",
+        description = "Crafting lightweight, bloat-free Android, PC, & web based applications."
+    ),
+    AboutMeEntry(
+        title = "• For The People:",
+        description = "Dedicated to open-source, free, & user-controlled software."
+    ),
+    AboutMeEntry(
+        title = "• Gaming Tinkerer:",
+        description = "Passionate about both modern titles & retro emulation, bridging the gap across PC, handhelds, & mobile."
+    ),
+    AboutMeEntry(
+        title = "• Off the Clock:",
+        description = "Dad, Husband, Eagle Scout, Gamer, & Hooper."
+    )
+)
 
 @Composable
 fun AboutMeDialog(
@@ -110,22 +136,22 @@ fun AboutMeDialog(
                 .fillMaxSize()
                 .background(Color(0xDC04070D))
                 .clickable(onClick = onDismiss)
-                .padding(horizontal = 16.dp, vertical = 20.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 430.dp)
+                    .widthIn(max = 440.dp)
                     .clickable(enabled = false) {}
                     .shadow(
                         elevation = 24.dp,
-                        shape = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(22.dp),
                         ambientColor = CyberCyan,
                         spotColor = NeonPurple
                     )
                     .testTag("about_me_dialog_card"),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(22.dp),
                 border = BorderStroke(2.dp, neonBorderBrush),
                 color = Color(0xFF080E1E)
             ) {
@@ -145,7 +171,7 @@ fun AboutMeDialog(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(152.dp)
+                                .height(96.dp)
                                 .drawBehind {
                                     val w = size.width
                                     val h = size.height
@@ -258,10 +284,10 @@ fun AboutMeDialog(
                         // Glowing Circular Tron / Daft Punk Avatar overlapping banner seam
                         Box(
                             modifier = Modifier
-                                .padding(top = 24.dp)
-                                .size(146.dp)
+                                .padding(top = 10.dp)
+                                .size(92.dp)
                                 .shadow(
-                                    elevation = 16.dp,
+                                    elevation = 14.dp,
                                     shape = CircleShape,
                                     ambientColor = CyberCyan,
                                     spotColor = NeonPurple
@@ -272,7 +298,7 @@ fun AboutMeDialog(
                                         colors = listOf(CyberCyan, Color.White, NeonPurple)
                                     )
                                 )
-                                .padding(4.dp),
+                                .padding(3.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
@@ -286,21 +312,21 @@ fun AboutMeDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     // 2. "JHor" Title flanked by glowing neon bars
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
+                            .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp))
                                 .background(
                                     Brush.horizontalGradient(
                                         colors = listOf(Color.Transparent, CyberCyan)
@@ -310,16 +336,16 @@ fun AboutMeDialog(
                         Text(
                             text = "JHor",
                             color = Color(0xFF0A1A38),
-                            fontSize = 36.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Black,
-                            letterSpacing = 2.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            letterSpacing = 1.5.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp)
                         )
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp))
                                 .background(
                                     Brush.horizontalGradient(
                                         colors = listOf(NeonPurple, Color.Transparent)
@@ -328,19 +354,19 @@ fun AboutMeDialog(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
 
                     // Neon circuit divider with center ring
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 36.dp),
+                            .padding(horizontal = 32.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(2.5.dp)
+                                .height(2.dp)
                                 .background(
                                     Brush.horizontalGradient(
                                         colors = listOf(Color.Transparent, CyberCyan)
@@ -349,15 +375,15 @@ fun AboutMeDialog(
                         )
                         Box(
                             modifier = Modifier
-                                .padding(horizontal = 10.dp)
-                                .size(14.dp)
+                                .padding(horizontal = 8.dp)
+                                .size(10.dp)
                                 .clip(CircleShape)
-                                .border(3.dp, Color(0xFF102A6B), CircleShape)
+                                .border(2.dp, Color(0xFF102A6B), CircleShape)
                         )
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(2.5.dp)
+                                .height(2.dp)
                                 .background(
                                     Brush.horizontalGradient(
                                         colors = listOf(NeonPurple, Color.Transparent)
@@ -366,66 +392,78 @@ fun AboutMeDialog(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
 
                     // "ABOUT ME" Subheader
                     Text(
                         text = "ABOUT ME",
                         color = Color(0xFF0D234D),
-                        fontSize = 23.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         fontStyle = FontStyle.Italic,
-                        letterSpacing = 1.5.sp
+                        letterSpacing = 1.2.sp
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    // 3. Bio Text matching screenshot
+                    // 3. Compact Structured Bio Card (fits cleanly on one screen without scrolling)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(horizontal = 14.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xBAFFFFFF))
+                            .border(
+                                width = 1.dp,
+                                color = CyberCyan.copy(alpha = 0.28f),
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .testTag("about_me_bio_section"),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                        horizontalAlignment = Alignment.Start
                     ) {
-                        Text(
-                            text = "Hey there! I’m an independent developer and server admin who loves vibe coding, useful mobile tools, and media applications.",
-                            color = Color(0xFF1A2438),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 20.sp,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Whether I’m building programs, vibing to music, or trolling the community, I’m always looking for ways to improve our quality of life.",
-                            color = Color(0xFF1A2438),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            lineHeight = 20.sp,
-                            textAlign = TextAlign.Center
-                        )
+                        ABOUT_ME_ENTRIES.forEach { entry ->
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = entry.title,
+                                    color = Color(0xFF0A1E46),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    lineHeight = 14.sp
+                                )
+                                Text(
+                                    text = entry.description,
+                                    color = Color(0xFF1A2438),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    lineHeight = 13.5.sp,
+                                    modifier = Modifier.padding(start = 10.dp)
+                                )
+                            }
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // 4. Action Pill Buttons
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 26.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(horizontal = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // Pill 1: SUPPORT ON KO-FI
                         Button(
                             onClick = { openExternalOrInApp("https://ko-fi.com/jhor23") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .height(48.dp)
                                 .testTag("about_me_kofi_btn"),
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00A89B)),
                             border = BorderStroke(1.5.dp, Color(0xFF5CF6EA)),
-                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                         ) {
                             Row(
@@ -435,14 +473,14 @@ fun AboutMeDialog(
                                 Text(
                                     text = "SUPPORT ON KO-FI",
                                     color = Color.White,
-                                    fontSize = 14.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.6.sp
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Box(
                                     modifier = Modifier
-                                        .size(26.dp)
+                                        .size(24.dp)
                                         .clip(RoundedCornerShape(7.dp))
                                         .background(Color.White),
                                     contentAlignment = Alignment.Center
@@ -451,7 +489,7 @@ fun AboutMeDialog(
                                         imageVector = Icons.Default.Favorite,
                                         contentDescription = "Ko-fi Heart",
                                         tint = Color(0xFFFF4D5A),
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(15.dp)
                                     )
                                 }
                             }
@@ -462,12 +500,12 @@ fun AboutMeDialog(
                             onClick = { openExternalOrInApp("https://github.com/JHor23/WebCade") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .height(48.dp)
                                 .testTag("about_me_github_btn"),
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF091B3A)),
                             border = BorderStroke(1.5.dp, CyberCyan),
-                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                         ) {
                             Row(
@@ -477,14 +515,14 @@ fun AboutMeDialog(
                                 Text(
                                     text = "VIEW SOURCE (GITHUB)",
                                     color = Color.White,
-                                    fontSize = 14.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.6.sp
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Box(
                                     modifier = Modifier
-                                        .size(26.dp)
+                                        .size(24.dp)
                                         .clip(CircleShape)
                                         .background(Color.White),
                                     contentAlignment = Alignment.Center
@@ -493,7 +531,7 @@ fun AboutMeDialog(
                                         imageVector = Icons.Default.Code,
                                         contentDescription = "GitHub Source",
                                         tint = Color(0xFF091B3A),
-                                        modifier = Modifier.size(17.dp)
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
@@ -504,12 +542,12 @@ fun AboutMeDialog(
                             onClick = { openExternalOrInApp("https://github.com/JHor23") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 48.dp)
+                                .height(48.dp)
                                 .testTag("about_me_projects_btn"),
                             shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7200CA)),
                             border = BorderStroke(1.5.dp, Color(0xFFD68BFF)),
-                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                         ) {
                             Row(
@@ -519,14 +557,14 @@ fun AboutMeDialog(
                                 Text(
                                     text = "CHECK OUT MY PROJECTS",
                                     color = Color.White,
-                                    fontSize = 14.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 0.6.sp
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Box(
                                     modifier = Modifier
-                                        .size(26.dp)
+                                        .size(24.dp)
                                         .clip(RoundedCornerShape(7.dp))
                                         .background(Color.White),
                                     contentAlignment = Alignment.Center
@@ -535,21 +573,21 @@ fun AboutMeDialog(
                                         imageVector = Icons.Default.Folder,
                                         contentDescription = "Projects",
                                         tint = Color(0xFF7200CA),
-                                        modifier = Modifier.size(17.dp)
+                                        modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // 5. Footer: Version & Thank You
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
-                            .padding(bottom = 18.dp),
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -566,9 +604,9 @@ fun AboutMeDialog(
                         Text(
                             text = "v${BuildConfig.VERSION_NAME} | Thanks for the support!",
                             color = Color(0xFF3A4963),
-                            fontSize = 12.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 12.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp)
                         )
                         Box(
                             modifier = Modifier

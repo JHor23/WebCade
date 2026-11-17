@@ -333,5 +333,58 @@ class ExampleRobolectricTest {
       )
     )
   }
+
+  @Test
+  fun `test extractChromeVersions parses Chromium version and provides fallback`() {
+    val sampleDefaultUa =
+      "Mozilla/5.0 (Linux; Android 15; Pixel 9 Build/AP3A.241005.015; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/136.0.7103.60 Mobile Safari/537.36"
+    assertEquals("136" to "136.0.7103.60", com.example.browser.extractChromeVersions(sampleDefaultUa))
+    assertEquals("131" to "131.0.0.0", com.example.browser.extractChromeVersions(""))
+  }
+
+  @Test
+  fun `test sanitizeMobileUserAgent strips wv and Version markers for Google Sign-In compatibility`() {
+    val rawWebViewUa =
+      "Mozilla/5.0 (Linux; Android 15; Pixel 9 Build/AP3A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/136.0.7103.60 Mobile Safari/537.36"
+    val sanitized = com.example.browser.sanitizeMobileUserAgent(rawWebViewUa)
+
+    assertFalse(sanitized.contains("; wv"))
+    assertFalse(sanitized.contains("Version/4.0"))
+    assertTrue(sanitized.contains("Chrome/136.0.7103.60 Mobile Safari/537.36"))
+    assertEquals(
+      "Mozilla/5.0 (Linux; Android 15; Pixel 9 Build/AP3A) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.60 Mobile Safari/537.36",
+      sanitized
+    )
+  }
+
+  @Test
+  fun `test resolveUserAgentString builds matching Chrome UAs across all modes`() {
+    val rawWebViewUa =
+      "Mozilla/5.0 (Linux; Android 15; Pixel 9; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/138.0.7204.12 Mobile Safari/537.36"
+
+    val desktopUa = com.example.browser.resolveUserAgentString(
+      rawWebViewUa,
+      com.example.model.UserAgentMode.DESKTOP_CHROME
+    )
+    assertTrue(desktopUa.contains("Windows NT 10.0; Win64; x64"))
+    assertTrue(desktopUa.contains("Chrome/138.0.0.0"))
+    assertFalse(desktopUa.contains("; wv"))
+
+    val crosUa = com.example.browser.resolveUserAgentString(
+      rawWebViewUa,
+      com.example.model.UserAgentMode.CHROME_OS
+    )
+    assertTrue(crosUa.contains("X11; CrOS x86_64"))
+    assertTrue(crosUa.contains("Chrome/138.0.0.0"))
+    assertFalse(crosUa.contains("; wv"))
+
+    val mobileUa = com.example.browser.resolveUserAgentString(
+      rawWebViewUa,
+      com.example.model.UserAgentMode.MOBILE
+    )
+    assertFalse(mobileUa.contains("; wv"))
+    assertFalse(mobileUa.contains("Version/4.0"))
+    assertTrue(mobileUa.contains("Chrome/138.0.7204.12 Mobile Safari/537.36"))
+  }
 }
 

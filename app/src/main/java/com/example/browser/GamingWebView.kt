@@ -8,6 +8,9 @@ import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
+import androidx.webkit.UserAgentMetadata
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -54,6 +57,136 @@ import com.example.ui.theme.DarkSurface
 import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
+
+private val CHROME_VERSION_REGEX = Regex("""Chrome/(\d+)(?:\.(\d+\.\d+\.\d+))?""")
+private const val DESKTOP_WIN_UA_TEMPLATE =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/%s.0.0.0 Safari/537.36"
+private const val CHROME_OS_UA_TEMPLATE =
+    "Mozilla/5.0 (X11; CrOS x86_64 15886.44.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/%s.0.0.0 Safari/537.36"
+private const val FALLBACK_MOBILE_UA =
+    "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+
+internal fun extractChromeVersions(defaultUa: String): Pair<String, String> {
+    val match = CHROME_VERSION_REGEX.find(defaultUa)
+    val major = match?.groupValues?.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "131"
+    val suffix = match?.groupValues?.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "0.0.0"
+    return major to "$major.$suffix"
+}
+
+internal fun sanitizeMobileUserAgent(defaultUa: String): String {
+    if (defaultUa.isBlank()) return FALLBACK_MOBILE_UA
+    return defaultUa
+        .replace("; wv)", ")")
+        .replace("; wv;", ";")
+        .replace(Regex("""\bVersion/\S+\s*"""), "")
+        .replace(Regex("""\s{2,}"""), " ")
+        .trim()
+}
+
+internal fun resolveUserAgentString(defaultUa: String, mode: UserAgentMode): String {
+    val (majorVersion, _) = extractChromeVersions(defaultUa)
+    return when (mode) {
+        UserAgentMode.DESKTOP_CHROME -> String.format(java.util.Locale.US, DESKTOP_WIN_UA_TEMPLATE, majorVersion)
+        UserAgentMode.CHROME_OS -> String.format(java.util.Locale.US, CHROME_OS_UA_TEMPLATE, majorVersion)
+        UserAgentMode.MOBILE -> sanitizeMobileUserAgent(defaultUa)
+    }
+}
+
+fun applyBrowserIdentityAndAuthSettings(
+    context: Context,
+    settings: WebSettings,
+    userAgentMode: UserAgentMode
+) {
+    val defaultUa = try {
+        WebSettings.getDefaultUserAgent(context)
+    } catch (_: Throwable) {
+        ""
+    }
+    val (majorVersion, fullVersion) = extractChromeVersions(defaultUa)
+    val resolvedUa = resolveUserAgentString(defaultUa, userAgentMode)
+
+    try {
+        settings.userAgentString = resolvedUa
+    } catch (_: Throwable) {
+        settings.userAgentString = if (userAgentMode.value.isNotEmpty()) userAgentMode.value else null
+    }
+
+    // Suppress X-Requested-With header so Google Sign-In does not reject WebCade as an embedded WebView
+    try {
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
+            WebSettingsCompat.setRequestedWithHeaderOriginAllowList(settings, emptySet())
+        }
+    } catch (_: Throwable) {}
+
+    // Align Client Hints (Sec-CH-UA / navigator.userAgentData) with Google Chrome instead of "Android WebView"
+    try {
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) {
+            val brands = listOf(
+                UserAgentMetadata.BrandVersion.Builder()
+                    .setBrand("Chromium")
+                    .setMajorVersion(majorVersion)
+                    .setFullVersion(fullVersion)
+                    .build(),
+                UserAgentMetadata.BrandVersion.Builder()
+                    .setBrand("Google Chrome")
+                    .setMajorVersion(majorVersion)
+                    .setFullVersion(fullVersion)
+                    .build(),
+                UserAgentMetadata.BrandVersion.Builder()
+                    .setBrand("Not_A Brand")
+                    .setMajorVersion("24")
+                    .setFullVersion("24.0.0.0")
+                    .build()
+            )
+            val metadataBuilder = UserAgentMetadata.Builder()
+                .setBrandVersionList(brands)
+                .setFullVersion(fullVersion)
+                .setWow64(false)
+
+            when (userAgentMode) {
+                UserAgentMode.DESKTOP_CHROME -> {
+                    metadataBuilder
+                        .setPlatform("Windows")
+                        .setPlatformVersion("10.0.0")
+                        .setArchitecture("x86")
+                        .setModel("")
+                        .setMobile(false)
+                        .setBitness(64)
+                }
+                UserAgentMode.CHROME_OS -> {
+                    metadataBuilder
+                        .setPlatform("Chrome OS")
+                        .setPlatformVersion("15886.44.0")
+                        .setArchitecture("x86")
+                        .setModel("")
+                        .setMobile(false)
+                        .setBitness(64)
+                }
+                UserAgentMode.MOBILE -> {
+                    val isArm64 = Build.SUPPORTED_64_BIT_ABIS.isNotEmpty()
+                    metadataBuilder
+                        .setPlatform("Android")
+                        .setPlatformVersion(Build.VERSION.RELEASE ?: "14")
+                        .setArchitecture(if (isArm64) "arm" else "")
+                        .setModel(Build.MODEL ?: "")
+                        .setMobile(true)
+                        .setBitness(if (isArm64) 64 else UserAgentMetadata.BITNESS_DEFAULT)
+                }
+            }
+            WebSettingsCompat.setUserAgentMetadata(settings, metadataBuilder.build())
+        }
+    } catch (_: Throwable) {}
+
+    // Enable WebAuthn / Passkey support for modern Google Sign-In verification flows
+    try {
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
+            WebSettingsCompat.setWebAuthenticationSupport(
+                settings,
+                WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_BROWSER
+            )
+        }
+    } catch (_: Throwable) {}
+}
 
 @SuppressLint("SetJavaScriptEnabled")
 fun setupGamingWebSettings(
@@ -105,14 +238,10 @@ fun setupGamingWebSettings(
         settings.blockNetworkLoads = false
         settings.javaScriptCanOpenWindowsAutomatically = true
 
-        // Apply User Agent
-        if (userAgentMode.value.isNotEmpty()) {
-            settings.userAgentString = userAgentMode.value
-        } else {
-            settings.userAgentString = null // Reset to default
-        }
+        // Apply sanitized User-Agent, Client Hints, X-Requested-With suppression, and WebAuthn support
+        applyBrowserIdentityAndAuthSettings(webView.context, settings, userAgentMode)
 
-        // Enable third-party cookies for cross-origin cloud gaming authentication
+        // Enable third-party cookies for cross-origin cloud gaming and Google authentication
         try {
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
@@ -294,18 +423,19 @@ fun GamingWebViewContainer(
         return
     }
 
-    // React to user agent changes dynamically
+    var appliedUserAgentMode by remember(webView) { mutableStateOf(userAgentMode) }
+
+    // React to user agent changes dynamically without double-reloading on initial launch
     LaunchedEffect(userAgentMode, webView) {
-        try {
-            if (userAgentMode.value.isNotEmpty()) {
-                webView.settings.userAgentString = userAgentMode.value
-            } else {
-                webView.settings.userAgentString = null
-            }
-            if (webView.url != null) {
-                webView.reload()
-            }
-        } catch (_: Throwable) {}
+        if (userAgentMode != appliedUserAgentMode) {
+            appliedUserAgentMode = userAgentMode
+            try {
+                applyBrowserIdentityAndAuthSettings(context, webView.settings, userAgentMode)
+                if (webView.url != null) {
+                    webView.reload()
+                }
+            } catch (_: Throwable) {}
+        }
     }
 
     // React to URL changes: only re-navigate when currentUrl changes to a new target
