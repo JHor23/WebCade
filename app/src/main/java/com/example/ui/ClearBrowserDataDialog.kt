@@ -1,6 +1,7 @@
 package com.example.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -127,10 +128,12 @@ fun ClearBrowserDataDialog(
                                 Text(
                                     text = "Cache, Cookies & Session Storage",
                                     color = NeonPink,
-                                    fontSize = 10.5.sp,
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp,
+                                    letterSpacing = 0.sp,
                                     fontFamily = FontFamily.Monospace,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    modifier = Modifier.basicMarquee()
                                 )
                             }
                         }
@@ -162,6 +165,8 @@ fun ClearBrowserDataDialog(
                                 text = "The following will be completely wiped from the device:",
                                 color = TextSecondary,
                                 fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                letterSpacing = 0.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                             DataPillItem("Cached web assets, images & scripts")
@@ -270,7 +275,9 @@ private fun DataPillItem(text: String) {
         Text(
             text = text,
             color = TextMuted,
-            fontSize = 11.sp
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            letterSpacing = 0.sp
         )
     }
 }

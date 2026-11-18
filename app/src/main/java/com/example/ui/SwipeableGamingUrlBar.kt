@@ -36,7 +36,6 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.BookmarkAdded
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentPaste
@@ -56,8 +55,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -607,8 +604,8 @@ fun SwipeableGamingUrlBar(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Text(
                                 text = "PRIVACY, ADS & STORAGE",
@@ -625,32 +622,47 @@ fun SwipeableGamingUrlBar(
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(DarkSurfaceElevated)
                                     .clickable { onToggleAdBlocker() }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.weight(1f)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 10.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Shield,
                                         contentDescription = "Ad Blocker",
                                         tint = if (isAdBlockerEnabled) CyberCyan else TextMuted,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(22.dp)
                                     )
-                                    Column {
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
                                         Text(
                                             text = "Ad-Blocker DNS Filtering",
                                             color = TextPrimary,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 13.5.sp,
+                                            lineHeight = 17.sp,
+                                            letterSpacing = 0.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = if (isAdBlockerEnabled) "Active • Blocking video ads, trackers & malware" else "Disabled • Tap to enable DNS filtering",
+                                            text = if (isAdBlockerEnabled) {
+                                                "Active • Blocking video ads & trackers"
+                                            } else {
+                                                "Disabled • Tap to enable DNS filtering"
+                                            },
                                             color = if (isAdBlockerEnabled) CyberCyan else TextSecondary,
-                                            fontSize = 11.sp
+                                            fontSize = 11.sp,
+                                            lineHeight = 14.5.sp,
+                                            letterSpacing = 0.sp
                                         )
                                     }
                                 }
@@ -675,39 +687,54 @@ fun SwipeableGamingUrlBar(
                                     .background(DarkSurfaceElevated)
                                     .clickable { onToggleTunnel() }
                                     .testTag("bar_tunnel_toggle_row")
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.weight(1f)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 8.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Security,
                                         contentDescription = "Anti-DPI Encrypted Tunnel",
                                         tint = if (isTunnelEnabled) NeonGreen else TextMuted,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(22.dp)
                                     )
-                                    Column(modifier = Modifier.weight(1f)) {
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
                                         Text(
                                             text = "Anti-DPI Encrypted Tunnel",
                                             color = TextPrimary,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 13.5.sp,
+                                            lineHeight = 17.sp,
+                                            letterSpacing = 0.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = if (isTunnelEnabled) "Active • Bypasses ISP DPI & match throttling" else "Disabled • Encrypted tunnel for anti-throttling",
+                                            text = if (isTunnelEnabled) {
+                                                "Active • Bypasses ISP DPI throttling"
+                                            } else {
+                                                "Disabled • Anti-throttling encrypted tunnel"
+                                            },
                                             color = if (isTunnelEnabled) NeonGreen else TextSecondary,
-                                            fontSize = 11.sp
+                                            fontSize = 11.sp,
+                                            lineHeight = 14.5.sp,
+                                            letterSpacing = 0.sp
                                         )
                                     }
                                 }
 
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Surface(
                                         onClick = { onOpenTunnelConfig() },
@@ -715,7 +742,7 @@ fun SwipeableGamingUrlBar(
                                         shape = RoundedCornerShape(8.dp),
                                         border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.5f)),
                                         modifier = Modifier
-                                            .size(36.dp)
+                                            .size(34.dp)
                                             .testTag("url_bar_tunnel_config_btn")
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
@@ -723,7 +750,7 @@ fun SwipeableGamingUrlBar(
                                                 imageVector = Icons.Default.Settings,
                                                 contentDescription = "Configure Tunnel",
                                                 tint = CyberCyan,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(17.dp)
                                             )
                                         }
                                     }
@@ -751,32 +778,43 @@ fun SwipeableGamingUrlBar(
                                         onDismissUrlBar()
                                         onClearBrowserData()
                                     }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.weight(1f)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 10.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.DeleteSweep,
                                         contentDescription = "Clear Browser Data",
                                         tint = NeonPink,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(22.dp)
                                     )
-                                    Column {
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
                                         Text(
                                             text = "Clear Cache & Cookies",
                                             color = TextPrimary,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontSize = 13.5.sp,
+                                            lineHeight = 17.sp,
+                                            letterSpacing = 0.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = "Flushes browser cache, cookies, local storage & WebGL buffers",
+                                            text = "Wipes cache, cookies, DOM & WebGL data",
                                             color = TextSecondary,
-                                            fontSize = 11.sp
+                                            fontSize = 11.sp,
+                                            lineHeight = 14.5.sp,
+                                            letterSpacing = 0.sp
                                         )
                                     }
                                 }
@@ -789,9 +827,20 @@ fun SwipeableGamingUrlBar(
                                     colors = ButtonDefaults.buttonColors(containerColor = NeonPink.copy(alpha = 0.15f)),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, NeonPink),
                                     shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.testTag("url_bar_clear_data_btn")
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                    modifier = Modifier
+                                        .height(36.dp)
+                                        .testTag("url_bar_clear_data_btn")
                                 ) {
-                                    Text("CLEAR", color = NeonPink, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = "CLEAR",
+                                        color = NeonPink,
+                                        fontSize = 11.sp,
+                                        letterSpacing = 0.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
                                 }
                             }
                         }
@@ -807,61 +856,86 @@ fun SwipeableGamingUrlBar(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text(
-                                text = "BROWSER IDENTITY (USER AGENT)",
-                                color = TextMuted,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-
-                            FlowRow(
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "BROWSER IDENTITY (USER AGENT)",
+                                    color = TextMuted,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.8.sp
+                                )
+                                Text(
+                                    text = when (userAgentMode) {
+                                        UserAgentMode.DESKTOP_CHROME -> "Windows 11"
+                                        UserAgentMode.CHROME_OS -> "ChromeOS"
+                                        UserAgentMode.MOBILE -> "Mobile"
+                                    },
+                                    color = CyberCyan,
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(DarkSurfaceElevated, RoundedCornerShape(10.dp))
+                                    .border(1.dp, DarkBorder, RoundedCornerShape(10.dp))
+                                    .padding(3.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 UserAgentMode.entries.forEach { mode ->
                                     val isSelected = userAgentMode == mode
-                                    FilterChip(
-                                        selected = isSelected,
+                                    val shortLabel = when (mode) {
+                                        UserAgentMode.DESKTOP_CHROME -> "Desktop"
+                                        UserAgentMode.CHROME_OS -> "ChromeOS"
+                                        UserAgentMode.MOBILE -> "Mobile"
+                                    }
+
+                                    Surface(
                                         onClick = { onUserAgentChanged(mode) },
-                                        label = {
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                            .testTag("quick_ua_${mode.name.lowercase()}"),
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (isSelected) CyberCyan.copy(alpha = 0.2f) else Color.Transparent,
+                                        border = if (isSelected) {
+                                            androidx.compose.foundation.BorderStroke(1.dp, CyberCyan)
+                                        } else null
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
                                             Text(
-                                                text = "${mode.iconEmoji} ${mode.label}",
-                                                fontSize = 12.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                text = mode.iconEmoji,
+                                                fontSize = 13.sp,
+                                                letterSpacing = 0.sp
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = shortLabel,
+                                                color = if (isSelected) CyberCyan else TextSecondary,
+                                                fontSize = 11.5.sp,
+                                                letterSpacing = 0.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                 maxLines = 1,
                                                 softWrap = false
                                             )
-                                        },
-                                        leadingIcon = if (isSelected) {
-                                            {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    tint = CyberCyan,
-                                                    modifier = Modifier.size(14.dp)
-                                                )
-                                            }
-                                        } else null,
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = CyberCyan.copy(alpha = 0.2f),
-                                            selectedLabelColor = CyberCyan,
-                                            containerColor = DarkSurfaceElevated,
-                                            labelColor = TextSecondary
-                                        ),
-                                        border = if (isSelected) {
-                                            FilterChipDefaults.filterChipBorder(
-                                                enabled = true,
-                                                selected = true,
-                                                borderColor = CyberCyan,
-                                                borderWidth = 1.dp
-                                            )
-                                        } else null
-                                    )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1059,31 +1133,48 @@ fun SwipeableGamingUrlBar(
                                     onDismissUrlBar()
                                     onOpenFullHub()
                                 }
-                                .padding(16.dp),
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.SportsEsports,
-                                    contentDescription = "Controller Hub",
-                                    tint = NeonPurple,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                                Column {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .background(NeonPurple.copy(alpha = 0.14f), RoundedCornerShape(10.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SportsEsports,
+                                        contentDescription = "Controller Hub",
+                                        tint = NeonPurple,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
                                     Text(
                                         text = "Gamepad & Key Mapping Hub",
                                         color = TextPrimary,
                                         fontSize = 14.sp,
+                                        lineHeight = 18.sp,
+                                        letterSpacing = 0.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
                                         text = "Hardware diagnostics, custom button mapping & mouse reticle",
                                         color = TextSecondary,
-                                        fontSize = 11.sp
+                                        fontSize = 11.5.sp,
+                                        lineHeight = 15.sp,
+                                        letterSpacing = 0.sp
                                     )
                                 }
                             }
