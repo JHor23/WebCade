@@ -6,6 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,6 +56,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -72,6 +77,7 @@ import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GamepadMappingDialog(
     currentMode: ControllerMode,
@@ -124,6 +130,9 @@ fun GamepadMappingDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
@@ -141,17 +150,21 @@ fun GamepadMappingDialog(
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "Controller Mode & Mapping",
                                     color = TextPrimary,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 15.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = if (gamepadStatus.isConnected) "Connected: ${gamepadStatus.deviceName}" else "No physical controller connected",
                                     color = if (gamepadStatus.isConnected) NeonGreen else TextSecondary,
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -159,7 +172,7 @@ fun GamepadMappingDialog(
                         IconButton(
                             onClick = onDismiss,
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(38.dp)
                                 .background(DarkSurfaceElevated, CircleShape)
                         ) {
                             Icon(
@@ -194,23 +207,26 @@ fun GamepadMappingDialog(
                                 shape = RoundedCornerShape(8.dp),
                                 color = if (isSelected) CyberCyan else Color.Transparent
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 6.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(3.dp)
                                 ) {
                                     Icon(
                                         imageVector = if (m == ControllerMode.DEDICATED_GAMEPAD) Icons.Default.SportsEsports else Icons.Default.Keyboard,
                                         contentDescription = m.label,
                                         tint = if (isSelected) DarkBackground else TextSecondary,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(17.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (m == ControllerMode.DEDICATED_GAMEPAD) "Dedicated Gamepad" else "Key & Mouse Emulation",
+                                        text = if (m == ControllerMode.DEDICATED_GAMEPAD) "Dedicated\nGamepad" else "Key & Mouse\nEmulation",
                                         color = if (isSelected) DarkBackground else TextSecondary,
                                         fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
+                                        lineHeight = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
                                     )
                                 }
                             }
@@ -291,16 +307,17 @@ fun GamepadMappingDialog(
 
                             // Presets Row
                             item {
-                                Row(
+                                FlowRow(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
                                         text = "Presets:",
                                         color = TextMuted,
                                         fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace
+                                        fontFamily = FontFamily.Monospace,
+                                        modifier = Modifier.align(Alignment.CenterVertically)
                                     )
                                     Button(
                                         onClick = {
@@ -318,9 +335,18 @@ fun GamepadMappingDialog(
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = DarkBackground),
                                         shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.height(34.dp)
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        modifier = Modifier
+                                            .height(34.dp)
+                                            .align(Alignment.CenterVertically)
                                     ) {
-                                        Text("FPS / WASD", fontSize = 11.sp, color = CyberCyan)
+                                        Text(
+                                            text = "FPS / WASD",
+                                            fontSize = 11.sp,
+                                            color = CyberCyan,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
 
                                     Button(
@@ -337,9 +363,18 @@ fun GamepadMappingDialog(
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = DarkBackground),
                                         shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.height(34.dp)
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        modifier = Modifier
+                                            .height(34.dp)
+                                            .align(Alignment.CenterVertically)
                                     ) {
-                                        Text("Arcade / Platformer", fontSize = 11.sp, color = NeonPurple)
+                                        Text(
+                                            text = "Arcade / Platformer",
+                                            fontSize = 11.sp,
+                                            color = NeonPurple,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
                                     }
                                 }
                             }
@@ -513,15 +548,21 @@ fun ButtonMappingRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(DarkBackground, RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             color = TextPrimary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = 11.5.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
         )
 
         Box {
@@ -536,9 +577,11 @@ fun ButtonMappingRow(
                 Text(
                     text = currentValue.label,
                     color = if (currentValue.isMouse) NeonGreen else CyberCyan,
-                    fontSize = 11.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                 )
             }
 

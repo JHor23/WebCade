@@ -7,9 +7,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -284,7 +286,7 @@ fun GamingPortalHome(
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             // Ad-Blocker DNS Filtering Toggle Pill
                             Surface(
@@ -295,12 +297,12 @@ fun GamingPortalHome(
                                     if (isAdBlockerEnabled) CyberCyan else DarkBorder
                                 ),
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .weight(1.02f)
                                     .clickable { onToggleAdBlocker() }
                                     .testTag("portal_adblock_toggle_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
@@ -308,14 +310,13 @@ fun GamingPortalHome(
                                         imageVector = Icons.Default.Shield,
                                         contentDescription = "Ad-Blocker DNS Filtering",
                                         tint = if (isAdBlockerEnabled) CyberCyan else TextMuted,
-                                        modifier = Modifier.size(14.dp)
+                                        modifier = Modifier.size(13.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
                                     Text(
                                         text = if (isAdBlockerEnabled) "AdBlock: ON" else "AdBlock",
                                         color = if (isAdBlockerEnabled) CyberCyan else TextMuted,
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         softWrap = false
@@ -332,12 +333,12 @@ fun GamingPortalHome(
                                     if (isTunnelEnabled) NeonGreen else DarkBorder
                                 ),
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .weight(1.08f)
                                     .clickable { onToggleTunnel() }
                                     .testTag("portal_tunnel_toggle_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
@@ -345,14 +346,13 @@ fun GamingPortalHome(
                                         imageVector = Icons.Default.Security,
                                         contentDescription = "Anti-DPI Encrypted Tunnel",
                                         tint = if (isTunnelEnabled) NeonGreen else TextMuted,
-                                        modifier = Modifier.size(14.dp)
+                                        modifier = Modifier.size(13.dp)
                                     )
                                     Spacer(modifier = Modifier.width(3.dp))
                                     Text(
                                         text = if (isTunnelEnabled) "Tunnel: ON" else "Tunnel",
                                         color = if (isTunnelEnabled) NeonGreen else TextMuted,
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         softWrap = false
@@ -360,7 +360,7 @@ fun GamingPortalHome(
                                     Spacer(modifier = Modifier.width(2.dp))
                                     Box(
                                         modifier = Modifier
-                                            .size(18.dp)
+                                            .size(16.dp)
                                             .clip(CircleShape)
                                             .clickable { onOpenTunnelConfig() },
                                         contentAlignment = Alignment.Center
@@ -384,12 +384,12 @@ fun GamingPortalHome(
                                     if (gamepadStatus.isConnected) CyberCyan else DarkBorder
                                 ),
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .weight(0.92f)
                                     .clickable { onOpenControllerMapping() }
                                     .testTag("portal_controller_config_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
@@ -397,9 +397,9 @@ fun GamingPortalHome(
                                         imageVector = Icons.Default.SportsEsports,
                                         contentDescription = "Gamepad Mapping",
                                         tint = if (gamepadStatus.isConnected) CyberCyan else TextMuted,
-                                        modifier = Modifier.size(15.dp)
+                                        modifier = Modifier.size(14.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
                                     Text(
                                         text = if (gamepadStatus.isConnected) {
                                             if (controllerMode == ControllerMode.DEDICATED_GAMEPAD) "Pad: OK" else "Pad: KBM"
@@ -407,8 +407,7 @@ fun GamingPortalHome(
                                             "Gamepad"
                                         },
                                         color = if (gamepadStatus.isConnected) CyberCyan else TextMuted,
-                                        fontSize = 11.sp,
-                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         maxLines = 1,
                                         softWrap = false
@@ -749,7 +748,7 @@ fun GamingPortalHome(
                                 }
                                 Card(
                                     modifier = Modifier
-                                        .width(188.dp)
+                                        .width(194.dp)
                                         .clickable { onLaunchUrl(bookmark.url, bookmark.preferredUa) }
                                         .testTag("portal_bookmark_card_${bookmark.id}"),
                                     shape = RoundedCornerShape(12.dp),
@@ -759,8 +758,8 @@ fun GamingPortalHome(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(start = 11.dp, end = 6.dp, top = 8.dp, bottom = 10.dp),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(3.dp)
                                     ) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -768,36 +767,40 @@ fun GamingPortalHome(
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Row(
-                                                modifier = Modifier.weight(1f),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(end = 4.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Bookmark,
                                                     contentDescription = null,
                                                     tint = CyberCyan,
-                                                    modifier = Modifier.size(14.dp)
+                                                    modifier = Modifier.size(13.dp)
                                                 )
                                                 Text(
                                                     text = bookmark.title,
                                                     color = TextPrimary,
-                                                    fontSize = 13.sp,
+                                                    fontSize = 12.5.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                             }
-                                            IconButton(
-                                                onClick = { onEditBookmark(bookmark) },
+                                            Box(
                                                 modifier = Modifier
-                                                    .size(32.dp)
-                                                    .testTag("portal_edit_bookmark_${bookmark.id}")
+                                                    .clip(CircleShape)
+                                                    .clickable { onEditBookmark(bookmark) }
+                                                    .padding(4.dp)
+                                                    .testTag("portal_edit_bookmark_${bookmark.id}"),
+                                                contentAlignment = Alignment.Center
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Default.Edit,
                                                     contentDescription = "Edit ${bookmark.title}",
                                                     tint = TextSecondary,
-                                                    modifier = Modifier.size(14.dp)
+                                                    modifier = Modifier.size(13.dp)
                                                 )
                                             }
                                         }
@@ -805,13 +808,15 @@ fun GamingPortalHome(
                                         Text(
                                             text = BookmarkManager.deriveTitleFromUrl(bookmark.url),
                                             color = TextSecondary,
-                                            fontSize = 11.sp,
+                                            fontSize = 10.5.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
 
                                         Row(
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 2.dp),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
@@ -832,9 +837,7 @@ fun GamingPortalHome(
                                                 imageVector = Icons.Default.PlayArrow,
                                                 contentDescription = "Open ${bookmark.title}",
                                                 tint = CyberCyan,
-                                                modifier = Modifier
-                                                    .padding(end = 4.dp)
-                                                    .size(15.dp)
+                                                modifier = Modifier.size(15.dp)
                                             )
                                         }
                                     }
@@ -949,16 +952,19 @@ fun GamingPortalHome(
                     }
 
                     // Grid of Gaming Platforms with consistent heights and clear typography
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         filteredPlatforms.chunked(2).forEach { rowPlatforms ->
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 rowPlatforms.forEach { platform ->
                                     Card(
                                         modifier = Modifier
                                             .weight(1f)
+                                            .fillMaxHeight()
                                             .clickable { onLaunchUrl(platform.url, platform.recommendedUa) }
                                             .testTag("portal_platform_${platform.id}"),
                                         shape = RoundedCornerShape(12.dp),
@@ -968,8 +974,8 @@ fun GamingPortalHome(
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                                .padding(horizontal = 10.dp, vertical = 9.dp),
+                                            verticalArrangement = Arrangement.spacedBy(3.dp)
                                         ) {
                                             // Row 1: Emoji + Name + Launch Arrow
                                             Row(
@@ -979,25 +985,26 @@ fun GamingPortalHome(
                                             ) {
                                                 Row(
                                                     verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
                                                     modifier = Modifier.weight(1f)
                                                 ) {
-                                                    Text(text = platform.iconEmoji, fontSize = 20.sp)
+                                                    Text(text = platform.iconEmoji, fontSize = 16.sp)
                                                     Text(
                                                         text = platform.name,
                                                         color = TextPrimary,
-                                                        fontSize = 12.sp,
+                                                        fontSize = 11.5.sp,
+                                                        lineHeight = 13.5.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        maxLines = 1,
+                                                        maxLines = 2,
                                                         overflow = TextOverflow.Ellipsis
                                                     )
                                                 }
-                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Spacer(modifier = Modifier.width(3.dp))
                                                 Icon(
                                                     imageVector = Icons.Default.PlayArrow,
                                                     contentDescription = "Launch",
                                                     tint = CyberCyan,
-                                                    modifier = Modifier.size(16.dp)
+                                                    modifier = Modifier.size(14.dp)
                                                 )
                                             }
 
@@ -1005,21 +1012,20 @@ fun GamingPortalHome(
                                             Text(
                                                 text = platform.tag,
                                                 color = CyberCyan,
-                                                fontSize = 10.sp,
+                                                fontSize = 9.5.sp,
                                                 fontFamily = FontFamily.Monospace,
                                                 fontWeight = FontWeight.SemiBold,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
 
-                                            // Row 3: Description with uniform 2-line height
+                                            // Row 3: Description with compact 2-line height
                                             Text(
                                                 text = platform.description,
                                                 color = TextSecondary,
-                                                fontSize = 11.sp,
+                                                fontSize = 10.5.sp,
                                                 maxLines = 2,
-                                                minLines = 2,
-                                                lineHeight = 14.sp,
+                                                lineHeight = 13.sp,
                                                 overflow = TextOverflow.Ellipsis
                                             )
                                         }
