@@ -25,9 +25,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
@@ -69,7 +74,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadStatus
+import com.example.model.BookmarkManager
 import com.example.model.GamingPresets
+import com.example.model.SiteBookmark
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.DarkBackground
@@ -86,10 +93,13 @@ import com.example.ui.theme.TextSecondary
 @Composable
 fun GamingPortalHome(
     recentUrls: List<String>,
+    bookmarks: List<SiteBookmark> = emptyList(),
     gamepadStatus: GamepadStatus,
     selectedUserAgent: UserAgentMode,
     onUserAgentChanged: (UserAgentMode) -> Unit,
     onLaunchUrl: (url: String, ua: UserAgentMode) -> Unit,
+    onOpenAddBookmark: (initialUrl: String, initialTitle: String, initialUa: UserAgentMode) -> Unit = { _, _, _ -> },
+    onEditBookmark: (SiteBookmark) -> Unit = {},
     controllerMode: ControllerMode = ControllerMode.DEDICATED_GAMEPAD,
     onOpenControllerMapping: () -> Unit = {},
     isAdBlockerEnabled: Boolean = true,
@@ -461,10 +471,17 @@ fun GamingPortalHome(
                             shape = RoundedCornerShape(12.dp)
                         )
 
-                        // Action Buttons: Paste from Clipboard & Launch
+                        // Action Buttons: Paste from Clipboard, Save Bookmark & Launch
+                        val isInputBookmarked = remember(urlInput, bookmarks) {
+                            val trimmed = urlInput.trim()
+                            if (trimmed.isEmpty()) false else {
+                                val key = BookmarkManager.normalizeUrlKey(trimmed)
+                                bookmarks.any { BookmarkManager.normalizeUrlKey(it.url) == key }
+                            }
+                        }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Button(
@@ -478,7 +495,7 @@ fun GamingPortalHome(
                                     .heightIn(min = 48.dp)
                                     .testTag("paste_url_btn"),
                                 shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceElevated)
                             ) {
                                 Icon(
@@ -487,13 +504,38 @@ fun GamingPortalHome(
                                     tint = CyberCyan,
                                     modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     "PASTE",
                                     color = TextPrimary,
-                                    fontSize = 12.sp,
+                                    fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    onOpenAddBookmark(urlInput.trim(), "", selectedUserAgent)
+                                },
+                                modifier = Modifier
+                                    .heightIn(min = 48.dp)
+                                    .testTag("portal_add_bookmark_btn"),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isInputBookmarked) CyberCyan else DarkBorder
+                                ),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isInputBookmarked) CyberCyan.copy(alpha = 0.18f) else DarkSurfaceElevated
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (isInputBookmarked) Icons.Default.BookmarkAdded else Icons.Default.BookmarkAdd,
+                                    contentDescription = if (isInputBookmarked) "Edit Bookmark" else "Save Bookmark",
+                                    tint = if (isInputBookmarked) CyberCyan else NeonPurple,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
 
@@ -513,7 +555,7 @@ fun GamingPortalHome(
                                     tint = DarkBackground,
                                     modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = "LAUNCH FULLSCREEN",
                                     color = DarkBackground,
@@ -599,6 +641,200 @@ fun GamingPortalHome(
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                 maxLines = 1,
                                                 softWrap = false
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Saved Website Bookmarks Section
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bookmark,
+                                contentDescription = "Saved Bookmarks",
+                                tint = CyberCyan,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "SAVED BOOKMARKS" + if (bookmarks.isNotEmpty()) " (${bookmarks.size})" else "",
+                                color = CyberCyan,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Surface(
+                            onClick = { onOpenAddBookmark(urlInput.trim(), "", selectedUserAgent) },
+                            color = DarkSurfaceElevated,
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.55f)),
+                            modifier = Modifier.testTag("portal_new_bookmark_chip")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add Bookmark",
+                                    tint = CyberCyan,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = "Add Bookmark",
+                                    color = CyberCyan,
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    if (bookmarks.isEmpty()) {
+                        Surface(
+                            onClick = { onOpenAddBookmark(urlInput.trim(), "", selectedUserAgent) },
+                            color = DarkSurface,
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, DarkBorder),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("portal_bookmarks_empty")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BookmarkAdd,
+                                    contentDescription = null,
+                                    tint = NeonPurple,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "No bookmarks yet — tap Add Bookmark or save any active website from Quick Settings.",
+                                    color = TextSecondary,
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                        }
+                    } else {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(bookmarks, key = { it.id }) { bookmark ->
+                                val uaShort = when (bookmark.preferredUa) {
+                                    UserAgentMode.DESKTOP_CHROME -> "Desktop"
+                                    UserAgentMode.CHROME_OS -> "ChromeOS"
+                                    UserAgentMode.MOBILE -> "Mobile"
+                                }
+                                Card(
+                                    modifier = Modifier
+                                        .width(188.dp)
+                                        .clickable { onLaunchUrl(bookmark.url, bookmark.preferredUa) }
+                                        .testTag("portal_bookmark_card_${bookmark.id}"),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.45f))
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 11.dp, end = 6.dp, top = 8.dp, bottom = 10.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.weight(1f),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Bookmark,
+                                                    contentDescription = null,
+                                                    tint = CyberCyan,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Text(
+                                                    text = bookmark.title,
+                                                    color = TextPrimary,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = { onEditBookmark(bookmark) },
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .testTag("portal_edit_bookmark_${bookmark.id}")
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = "Edit ${bookmark.title}",
+                                                    tint = TextSecondary,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Text(
+                                            text = BookmarkManager.deriveTitleFromUrl(bookmark.url),
+                                            color = TextSecondary,
+                                            fontSize = 11.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Surface(
+                                                color = NeonPurple.copy(alpha = 0.2f),
+                                                shape = RoundedCornerShape(5.dp)
+                                            ) {
+                                                Text(
+                                                    text = uaShort,
+                                                    color = NeonPurple,
+                                                    fontSize = 9.5.sp,
+                                                    fontFamily = FontFamily.Monospace,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                            Icon(
+                                                imageVector = Icons.Default.PlayArrow,
+                                                contentDescription = "Open ${bookmark.title}",
+                                                tint = CyberCyan,
+                                                modifier = Modifier
+                                                    .padding(end = 4.dp)
+                                                    .size(15.dp)
                                             )
                                         }
                                     }

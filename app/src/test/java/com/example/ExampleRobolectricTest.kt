@@ -386,5 +386,114 @@ class ExampleRobolectricTest {
     assertFalse(mobileUa.contains("Version/4.0"))
     assertTrue(mobileUa.contains("Chrome/138.0.7204.12 Mobile Safari/537.36"))
   }
+
+  @Test
+  fun `test resolveEffectiveUserAgentForUrl switches Google Auth hosts to Mobile while preserving Desktop elsewhere`() {
+    // Google Sign-In & Auth domains must automatically use Mobile Chrome identity even in Desktop/ChromeOS mode
+    assertTrue(com.example.browser.isGoogleAuthUrl("https://accounts.google.com/v3/signin/identifier"))
+    assertTrue(com.example.browser.isGoogleAuthUrl("https://accounts.google.co.uk/o/oauth2/v2/auth"))
+    assertTrue(com.example.browser.isGoogleAuthUrl("https://accounts.youtube.com/accounts/SetSID"))
+    assertTrue(com.example.browser.isGoogleAuthUrl("https://myaccount.google.com/"))
+
+    assertEquals(
+      com.example.model.UserAgentMode.MOBILE,
+      com.example.browser.resolveEffectiveUserAgentForUrl(
+        "https://accounts.google.com/o/oauth2/v2/auth",
+        com.example.model.UserAgentMode.DESKTOP_CHROME
+      )
+    )
+    assertEquals(
+      com.example.model.UserAgentMode.MOBILE,
+      com.example.browser.resolveEffectiveUserAgentForUrl(
+        "https://accounts.google.com/ServiceLogin",
+        com.example.model.UserAgentMode.CHROME_OS
+      )
+    )
+
+    // Gaming portals and general Google workspace/search sites keep Desktop / ChromeOS as chosen
+    assertFalse(com.example.browser.isGoogleAuthUrl("https://www.google.com/search?q=webcade"))
+    assertFalse(com.example.browser.isGoogleAuthUrl("https://drive.google.com/"))
+    assertFalse(com.example.browser.isGoogleAuthUrl("https://www.xbox.com/play"))
+
+    assertEquals(
+      com.example.model.UserAgentMode.DESKTOP_CHROME,
+      com.example.browser.resolveEffectiveUserAgentForUrl(
+        "https://www.xbox.com/play",
+        com.example.model.UserAgentMode.DESKTOP_CHROME
+      )
+    )
+    assertEquals(
+      com.example.model.UserAgentMode.CHROME_OS,
+      com.example.browser.resolveEffectiveUserAgentForUrl(
+        "https://play.geforcenow.com",
+        com.example.model.UserAgentMode.CHROME_OS
+      )
+    )
+  }
+
+  @Test
+  fun `test BookmarkManager add, normalize, update, persist, and remove bookmarks`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val manager = com.example.model.BookmarkManager(context)
+    manager.clearAllBookmarks()
+    assertTrue(manager.bookmarks.value.isEmpty())
+
+    // Add bookmark with explicit name and preferred UA
+    val saved = manager.addBookmark(
+      url = "pokefableonline.com",
+      title = "PokéFable",
+      preferredUa = com.example.model.UserAgentMode.DESKTOP_CHROME
+    )
+    assertNotNull(saved)
+    assertEquals("https://pokefableonline.com", saved!!.url)
+    assertEquals("PokéFable", saved.title)
+    assertTrue(manager.isBookmarked("https://www.pokefableonline.com/"))
+
+    // Updating same URL with different trailing slash / www updates existing rather than duplicating
+    val updatedDup = manager.addBookmark(
+      url = "https://www.pokefableonline.com/",
+      title = "PokéFable Online",
+      preferredUa = com.example.model.UserAgentMode.MOBILE
+    )
+    assertNotNull(updatedDup)
+    assertEquals(1, manager.bookmarks.value.size)
+    assertEquals("PokéFable Online", manager.bookmarks.value.first().title)
+    assertEquals(com.example.model.UserAgentMode.MOBILE, manager.bookmarks.value.first().preferredUa)
+
+    // Add a second bookmark with empty title -> derives clean domain title
+    val second = manager.addBookmark(
+      url = "https://krunker.io/?game=123",
+      title = "",
+      preferredUa = com.example.model.UserAgentMode.DESKTOP_CHROME
+    )
+    assertNotNull(second)
+    assertEquals("krunker.io", second!!.title)
+    assertEquals(2, manager.bookmarks.value.size)
+
+    // Verify persistence across a new BookmarkManager instance
+    val reloadedManager = com.example.model.BookmarkManager(context)
+    assertEquals(2, reloadedManager.bookmarks.value.size)
+    assertTrue(reloadedManager.isBookmarked("https://krunker.io/?game=123"))
+
+    // Edit bookmark
+    reloadedManager.updateBookmark(
+      id = second.id,
+      newTitle = "Krunker Arena",
+      newUrl = "https://krunker.io",
+      newUa = com.example.model.UserAgentMode.CHROME_OS
+    )
+    val edited = reloadedManager.findByUrl("https://krunker.io")
+    assertNotNull(edited)
+    assertEquals("Krunker Arena", edited!!.title)
+    assertEquals(com.example.model.UserAgentMode.CHROME_OS, edited.preferredUa)
+
+    // Toggle removes existing bookmark
+    assertFalse(reloadedManager.toggleBookmark("https://krunker.io"))
+    assertFalse(reloadedManager.isBookmarked("https://krunker.io"))
+    assertEquals(1, reloadedManager.bookmarks.value.size)
+
+    reloadedManager.clearAllBookmarks()
+    assertTrue(reloadedManager.bookmarks.value.isEmpty())
+  }
 }
 

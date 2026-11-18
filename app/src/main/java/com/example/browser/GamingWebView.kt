@@ -92,6 +92,36 @@ internal fun resolveUserAgentString(defaultUa: String, mode: UserAgentMode): Str
     }
 }
 
+internal fun isGoogleAuthHost(host: String?): Boolean {
+    val normalized = host?.lowercase(java.util.Locale.ROOT)?.trimEnd('.') ?: return false
+    return normalized == "accounts.google.com" ||
+        normalized.startsWith("accounts.google.") ||
+        normalized.endsWith(".accounts.google.com") ||
+        normalized == "accounts.youtube.com" ||
+        normalized == "myaccount.google.com" ||
+        normalized == "consent.google.com" ||
+        normalized.startsWith("consent.google.") ||
+        normalized == "consent.youtube.com" ||
+        normalized == "gds.google.com" ||
+        normalized == "signin.google.com"
+}
+
+internal fun isGoogleAuthUrl(url: String?): Boolean {
+    if (url.isNullOrBlank()) return false
+    return try {
+        isGoogleAuthHost(android.net.Uri.parse(url).host)
+    } catch (_: Throwable) {
+        false
+    }
+}
+
+internal fun resolveEffectiveUserAgentForUrl(
+    url: String?,
+    desiredMode: UserAgentMode
+): UserAgentMode {
+    return if (isGoogleAuthUrl(url)) UserAgentMode.MOBILE else desiredMode
+}
+
 fun applyBrowserIdentityAndAuthSettings(
     context: Context,
     settings: WebSettings,
@@ -277,7 +307,9 @@ fun GamingWebViewContainer(
                 setBackgroundColor(android.graphics.Color.BLACK)
                 webViewClient = gamingWebClient.webViewClient
                 webChromeClient = gamingWebClient.webChromeClient
-                setupGamingWebSettings(this, userAgentMode)
+                val initialEffectiveUa = resolveEffectiveUserAgentForUrl(currentUrl, userAgentMode)
+                gamingWebClient.syncUserAgentState(userAgentMode, initialEffectiveUa)
+                setupGamingWebSettings(this, initialEffectiveUa)
 
                 // Register native bridge for HTML5 games to request orientation or handle full screen
                 addJavascriptInterface(
@@ -430,7 +462,9 @@ fun GamingWebViewContainer(
         if (userAgentMode != appliedUserAgentMode) {
             appliedUserAgentMode = userAgentMode
             try {
-                applyBrowserIdentityAndAuthSettings(context, webView.settings, userAgentMode)
+                val effectiveMode = resolveEffectiveUserAgentForUrl(webView.url, userAgentMode)
+                gamingWebClient.syncUserAgentState(userAgentMode, effectiveMode)
+                applyBrowserIdentityAndAuthSettings(context, webView.settings, effectiveMode)
                 if (webView.url != null) {
                     webView.reload()
                 }

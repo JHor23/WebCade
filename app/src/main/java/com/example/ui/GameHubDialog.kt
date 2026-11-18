@@ -25,6 +25,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentPaste
@@ -72,9 +75,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadStatus
+import com.example.model.BookmarkManager
 import com.example.model.GamingPlatform
 import com.example.model.GamingPresets
 import com.example.model.ScreenOrientationMode
+import com.example.model.SiteBookmark
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.DarkBackground
@@ -92,12 +97,14 @@ import com.example.ui.theme.TextSecondary
 fun GameHubDialog(
     currentUrl: String,
     recentUrls: List<String> = emptyList(),
+    bookmarks: List<SiteBookmark> = emptyList(),
     userAgentMode: UserAgentMode,
     isVirtualGamepadEnabled: Boolean,
     isPerformanceHudEnabled: Boolean,
     gamepadStatus: GamepadStatus,
     onDismiss: () -> Unit,
     onLoadUrl: (String, UserAgentMode) -> Unit,
+    onSaveBookmark: (String) -> Unit = {},
     onUserAgentChanged: (UserAgentMode) -> Unit,
     onToggleVirtualGamepad: (Boolean) -> Unit,
     onTogglePerformanceHud: (Boolean) -> Unit,
@@ -342,6 +349,34 @@ fun GameHubDialog(
                                             )
                                         }
 
+                                        // Bookmark Button
+                                        val isInputBookmarked = remember(customUrlInput, bookmarks) {
+                                            val key = BookmarkManager.normalizeUrlKey(customUrlInput)
+                                            key.isNotEmpty() && bookmarks.any { BookmarkManager.normalizeUrlKey(it.url) == key }
+                                        }
+                                        IconButton(
+                                            onClick = { onSaveBookmark(customUrlInput.trim()) },
+                                            modifier = Modifier
+                                                .size(50.dp)
+                                                .background(
+                                                    if (isInputBookmarked) CyberCyan.copy(alpha = 0.16f) else DarkBackground,
+                                                    RoundedCornerShape(10.dp)
+                                                )
+                                                .border(
+                                                    1.dp,
+                                                    if (isInputBookmarked) CyberCyan else DarkBorder,
+                                                    RoundedCornerShape(10.dp)
+                                                )
+                                                .testTag("dialog_bookmark_btn")
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isInputBookmarked) Icons.Default.BookmarkAdded else Icons.Default.BookmarkAdd,
+                                                contentDescription = if (isInputBookmarked) "Edit Bookmark" else "Save Bookmark",
+                                                tint = if (isInputBookmarked) CyberCyan else NeonPurple,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+
                                         // Go / Play Button
                                         Button(
                                             onClick = { submitUrl(customUrlInput) },
@@ -363,6 +398,49 @@ fun GameHubDialog(
                                                 fontWeight = FontWeight.Black,
                                                 fontSize = 13.sp
                                             )
+                                        }
+                                    }
+
+                                    // Saved Bookmarks quick chips
+                                    if (bookmarks.isNotEmpty()) {
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            items(bookmarks, key = { it.id }) { bookmark ->
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .clickable {
+                                                            customUrlInput = bookmark.url
+                                                            onLoadUrl(bookmark.url, bookmark.preferredUa)
+                                                            onDismiss()
+                                                        }
+                                                        .testTag("dialog_bookmark_chip_${bookmark.id}"),
+                                                    color = CyberCyan.copy(alpha = 0.12f),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    border = androidx.compose.foundation.BorderStroke(0.8.dp, CyberCyan.copy(alpha = 0.5f))
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Bookmark,
+                                                            contentDescription = "Bookmark",
+                                                            tint = CyberCyan,
+                                                            modifier = Modifier.size(12.dp)
+                                                        )
+                                                        Text(
+                                                            text = bookmark.title,
+                                                            color = TextPrimary,
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.SemiBold,
+                                                            maxLines = 1
+                                                        )
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 

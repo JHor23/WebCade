@@ -33,11 +33,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.BookmarkAdded
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
@@ -82,8 +86,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.model.BookmarkManager
 import com.example.model.GamingPresets
 import com.example.model.ScreenOrientationMode
+import com.example.model.SiteBookmark
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
 import com.example.ui.theme.DarkBackground
@@ -103,9 +109,13 @@ fun SwipeableGamingUrlBar(
     isVisible: Boolean,
     currentUrl: String,
     recentUrls: List<String>,
+    bookmarks: List<SiteBookmark> = emptyList(),
+    isCurrentUrlBookmarked: Boolean = false,
     userAgentMode: UserAgentMode,
     onDismissUrlBar: () -> Unit,
     onNavigateToUrl: (String, UserAgentMode) -> Unit,
+    onSaveBookmark: (String, UserAgentMode) -> Unit = { _, _ -> },
+    onEditBookmark: (SiteBookmark) -> Unit = {},
     onUserAgentChanged: (UserAgentMode) -> Unit,
     onReload: () -> Unit,
     onGoBack: () -> Unit,
@@ -307,10 +317,18 @@ fun SwipeableGamingUrlBar(
                                 shape = RoundedCornerShape(12.dp)
                             )
 
-                            // Primary Action Buttons Row: PASTE & LAUNCH GAME (Single-line, comfortable padding)
+                            // Primary Action Buttons Row: PASTE, SAVE BOOKMARK & LAUNCH GAME
+                            val isTypedBookmarked = remember(urlInputText, bookmarks, isCurrentUrlBookmarked) {
+                                val trimmed = urlInputText.trim()
+                                if (trimmed.isEmpty()) isCurrentUrlBookmarked
+                                else {
+                                    val key = BookmarkManager.normalizeUrlKey(trimmed)
+                                    bookmarks.any { BookmarkManager.normalizeUrlKey(it.url) == key }
+                                }
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Button(
                                     onClick = {
@@ -320,7 +338,7 @@ fun SwipeableGamingUrlBar(
                                         }
                                     },
                                     modifier = Modifier
-                                        .weight(1f)
+                                        .weight(0.95f)
                                         .height(50.dp)
                                         .testTag("url_bar_paste_btn"),
                                     contentPadding = PaddingValues(horizontal = 8.dp),
@@ -341,7 +359,7 @@ fun SwipeableGamingUrlBar(
                                         Text(
                                             text = "PASTE",
                                             color = TextPrimary,
-                                            fontSize = 13.sp,
+                                            fontSize = 12.5.sp,
                                             fontWeight = FontWeight.Bold,
                                             maxLines = 1,
                                             softWrap = false
@@ -350,9 +368,32 @@ fun SwipeableGamingUrlBar(
                                 }
 
                                 Button(
+                                    onClick = { onSaveBookmark(urlInputText.trim(), userAgentMode) },
+                                    modifier = Modifier
+                                        .height(50.dp)
+                                        .testTag("url_bar_bookmark_btn"),
+                                    contentPadding = PaddingValues(horizontal = 14.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (isTypedBookmarked) CyberCyan else DarkBorder
+                                    ),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isTypedBookmarked) CyberCyan.copy(alpha = 0.18f) else DarkSurfaceElevated
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = if (isTypedBookmarked) Icons.Default.BookmarkAdded else Icons.Default.BookmarkAdd,
+                                        contentDescription = if (isTypedBookmarked) "Edit Bookmark" else "Bookmark Current Site",
+                                        tint = if (isTypedBookmarked) CyberCyan else NeonPurple,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Button(
                                     onClick = { submit() },
                                     modifier = Modifier
-                                        .weight(1.3f)
+                                        .weight(1.25f)
                                         .height(50.dp)
                                         .testTag("url_bar_go_btn"),
                                     contentPadding = PaddingValues(horizontal = 10.dp),
@@ -374,7 +415,7 @@ fun SwipeableGamingUrlBar(
                                             text = "LAUNCH GAME",
                                             color = DarkBackground,
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 13.sp,
+                                            fontSize = 12.5.sp,
                                             maxLines = 1,
                                             softWrap = false
                                         )
@@ -826,7 +867,7 @@ fun SwipeableGamingUrlBar(
                         }
                     }
 
-                    // 5. Cloud Gaming Presets & Quick Shortcuts Card
+                    // 5. Saved Bookmarks & Cloud Gaming Presets Card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -839,6 +880,79 @@ fun SwipeableGamingUrlBar(
                                 .padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            if (bookmarks.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "SAVED BOOKMARKS (${bookmarks.size})",
+                                        color = CyberCyan,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        text = "Tap to open",
+                                        color = TextMuted,
+                                        fontSize = 10.sp
+                                    )
+                                }
+
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    bookmarks.forEach { bookmark ->
+                                        Surface(
+                                            modifier = Modifier
+                                                .clickable {
+                                                    urlInputText = bookmark.url
+                                                    onNavigateToUrl(bookmark.url, bookmark.preferredUa)
+                                                    onDismissUrlBar()
+                                                }
+                                                .testTag("quick_bookmark_${bookmark.id}"),
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = CyberCyan.copy(alpha = 0.1f),
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, CyberCyan.copy(alpha = 0.45f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(start = 10.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Bookmark,
+                                                    contentDescription = null,
+                                                    tint = CyberCyan,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Text(
+                                                    text = bookmark.title,
+                                                    color = TextPrimary,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = "Edit ${bookmark.title}",
+                                                    tint = TextSecondary,
+                                                    modifier = Modifier
+                                                        .size(16.dp)
+                                                        .clickable { onEditBookmark(bookmark) }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+
                             Text(
                                 text = "CLOUD GAMING PRESETS & QUICK SHORTCUTS",
                                 color = TextMuted,

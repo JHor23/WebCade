@@ -13,6 +13,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebResourceResponse
 import java.io.ByteArrayInputStream
+import java.util.Collections
+import com.example.model.UserAgentMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,9 +39,44 @@ class GamingWebClient(
     private val _webState = MutableStateFlow(WebState())
     val webState: StateFlow<WebState> = _webState.asStateFlow()
 
+    @Volatile
+    var desiredUserAgentMode: UserAgentMode = UserAgentMode.DESKTOP_CHROME
+        private set
+
+    @Volatile
+    private var activeEffectiveUserAgentMode: UserAgentMode? = null
+
+    private val authFallbackReloadedUrls = Collections.synchronizedSet(mutableSetOf<String>())
+
+    fun syncUserAgentState(desired: UserAgentMode, active: UserAgentMode) {
+        desiredUserAgentMode = desired
+        activeEffectiveUserAgentMode = active
+    }
+
     val webViewClient = object : WebViewClient() {
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
+            if (view != null && !url.isNullOrBlank()) {
+                val isAuth = isGoogleAuthUrl(url)
+                val targetMode = resolveEffectiveUserAgentForUrl(url, desiredUserAgentMode)
+                val currentEffective = activeEffectiveUserAgentMode ?: desiredUserAgentMode
+                if (targetMode != currentEffective) {
+                    activeEffectiveUserAgentMode = targetMode
+                    applyBrowserIdentityAndAuthSettings(view.context, view.settings, targetMode)
+                    if (isAuth && authFallbackReloadedUrls.add(url)) {
+                        view.post {
+                            try {
+                                view.stopLoading()
+                                view.loadUrl(url)
+                            } catch (_: Throwable) {}
+                        }
+                        return
+                    }
+                }
+                if (!isAuth) {
+                    authFallbackReloadedUrls.clear()
+                }
+            }
             // Immediately whitelist game's root host so its assets & sockets load without delay
             adBlockManager.setCurrentGameHost(url)
             _webState.value = _webState.value.copy(
@@ -66,15 +103,18 @@ class GamingWebClient(
                 CookieManager.getInstance().flush()
             } catch (_: Exception) {}
 
-            // Inject connection resilience & audio unlock bridge
-            view?.evaluateJavascript(ConnectionResilienceBridge.CONNECTION_RESILIENCE_SCRIPT, null)
-            // Inject virtual gamepad bridge into DOM
-            view?.evaluateJavascript(VirtualGamepadBridge.INJECTION_SCRIPT, null)
-            // Inject keyboard & mouse emulation bridge into DOM
-            view?.evaluateJavascript(com.example.gamepad.GamepadEmulationEngine.KBM_INJECTION_SCRIPT, null)
-            // Inject ad-blocker cosmetic rule when ad-blocker is enabled
-            if (adBlockManager.isAdBlockerEnabled.value) {
-                view?.evaluateJavascript(AdBlockManager.COSMETIC_AD_BLOCK_SCRIPT, null)
+            // Leave Google Sign-In / Auth pages completely untouched by game JS instrumentation
+            if (!isGoogleAuthUrl(url)) {
+                // Inject connection resilience & audio unlock bridge
+                view?.evaluateJavascript(ConnectionResilienceBridge.CONNECTION_RESILIENCE_SCRIPT, null)
+                // Inject virtual gamepad bridge into DOM
+                view?.evaluateJavascript(VirtualGamepadBridge.INJECTION_SCRIPT, null)
+                // Inject keyboard & mouse emulation bridge into DOM
+                view?.evaluateJavascript(com.example.gamepad.GamepadEmulationEngine.KBM_INJECTION_SCRIPT, null)
+                // Inject ad-blocker cosmetic rule when ad-blocker is enabled
+                if (adBlockManager.isAdBlockerEnabled.value) {
+                    view?.evaluateJavascript(AdBlockManager.COSMETIC_AD_BLOCK_SCRIPT, null)
+                }
             }
         }
 
@@ -129,6 +169,24 @@ class GamingWebClient(
             val scheme = uri.scheme?.lowercase() ?: ""
             // Allow standard http and https gaming links
             if (scheme == "http" || scheme == "https") {
+                val isMainFrame = request.isForMainFrame
+                if (isMainFrame && view != null) {
+                    val targetUrl = uri.toString()
+                    val targetMode = resolveEffectiveUserAgentForUrl(targetUrl, desiredUserAgentMode)
+                    val currentEffective = activeEffectiveUserAgentMode ?: desiredUserAgentMode
+                    if (targetMode != currentEffective) {
+                        activeEffectiveUserAgentMode = targetMode
+                        applyBrowserIdentityAndAuthSettings(view.context, view.settings, targetMode)
+                        if (request.method.equals("GET", ignoreCase = true)) {
+                            view.post {
+                                try {
+                                    view.loadUrl(targetUrl)
+                                } catch (_: Throwable) {}
+                            }
+                            return true
+                        }
+                    }
+                }
                 return false
             }
             // Block or ignore external non-web schemes to maintain locked-in gaming fullscreen

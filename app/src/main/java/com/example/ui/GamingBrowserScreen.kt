@@ -69,10 +69,14 @@ import com.example.browser.GameAssetCacheManager
 import com.example.browser.GamingWebClient
 import com.example.browser.GamingWebViewContainer
 import com.example.browser.VirtualGamepadBridge
+import com.example.browser.applyBrowserIdentityAndAuthSettings
+import com.example.browser.resolveEffectiveUserAgentForUrl
 import com.example.gamepad.ControllerMode
 import com.example.gamepad.GamepadManager
+import com.example.model.BookmarkManager
 import com.example.model.GamingPresets
 import com.example.model.ScreenOrientationMode
+import com.example.model.SiteBookmark
 import com.example.model.UrlHistoryManager
 import com.example.model.UserAgentMode
 import com.example.ui.theme.CyberCyan
@@ -118,6 +122,14 @@ fun GamingBrowserScreen(
     val encryptedTunnelManager = remember { EncryptedTunnelManager(context) }
     val isTunnelEnabled by encryptedTunnelManager.isTunnelEnabled.collectAsState()
     var isTunnelConfigDialogOpen by remember { mutableStateOf(false) }
+
+    val bookmarkManager = remember { BookmarkManager(context) }
+    val bookmarks by bookmarkManager.bookmarks.collectAsState()
+    var isBookmarkDialogOpen by remember { mutableStateOf(false) }
+    var editingBookmark by remember { mutableStateOf<SiteBookmark?>(null) }
+    var bookmarkDraftUrl by remember { mutableStateOf("") }
+    var bookmarkDraftTitle by remember { mutableStateOf("") }
+    var bookmarkDraftUa by remember { mutableStateOf(UserAgentMode.DESKTOP_CHROME) }
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var customFullscreenView by remember { mutableStateOf<View?>(null) }
@@ -256,6 +268,27 @@ fun GamingBrowserScreen(
         isUrlBarVisible = false
     }
 
+    fun openBookmarkEditor(
+        initialUrl: String,
+        initialTitle: String,
+        initialUa: UserAgentMode
+    ) {
+        val existing = bookmarkManager.findByUrl(initialUrl)
+        editingBookmark = existing
+        bookmarkDraftUrl = existing?.url ?: initialUrl
+        bookmarkDraftTitle = existing?.title ?: initialTitle
+        bookmarkDraftUa = existing?.preferredUa ?: initialUa
+        isBookmarkDialogOpen = true
+    }
+
+    fun openEditBookmark(bookmark: SiteBookmark) {
+        editingBookmark = bookmark
+        bookmarkDraftUrl = bookmark.url
+        bookmarkDraftTitle = bookmark.title
+        bookmarkDraftUa = bookmark.preferredUa
+        isBookmarkDialogOpen = true
+    }
+
     fun launchUrl(url: String, ua: UserAgentMode) {
         val cleanRaw = url.trim()
         if (cleanRaw.isEmpty()) return
@@ -266,6 +299,11 @@ fun GamingBrowserScreen(
         recentUrls = urlHistoryManager.getRecentUrls()
         currentUrl = formatted
         userAgentMode = ua
+        val effectiveUa = resolveEffectiveUserAgentForUrl(formatted, ua)
+        gamingWebClient.syncUserAgentState(ua, effectiveUa)
+        webViewInstance?.let { webView ->
+            applyBrowserIdentityAndAuthSettings(context, webView.settings, effectiveUa)
+        }
         adBlockManager.setCurrentGameHost(formatted)
         isAtHomePortal = false
         dismissUrlBar()
@@ -321,8 +359,10 @@ fun GamingBrowserScreen(
     // Intercept back button:
     // When playing in fullscreen game mode: pressing phone's back button OPENS the URL bar & settings!
     // If the URL bar or any dialog is already open: pressing back DISMISSES it to return to clean full-screen game.
-    BackHandler(enabled = isClearDataDialogOpen || isUrlBarVisible || isHubOpen || !isAtHomePortal) {
-        if (isClearDataDialogOpen) {
+    BackHandler(enabled = isBookmarkDialogOpen || isClearDataDialogOpen || isUrlBarVisible || isHubOpen || !isAtHomePortal) {
+        if (isBookmarkDialogOpen) {
+            isBookmarkDialogOpen = false
+        } else if (isClearDataDialogOpen) {
             isClearDataDialogOpen = false
         } else if (isUrlBarVisible) {
             dismissUrlBar()
@@ -338,11 +378,18 @@ fun GamingBrowserScreen(
         // Full Portal Home with dedicated URL input and presets
         GamingPortalHome(
             recentUrls = recentUrls,
+            bookmarks = bookmarks,
             gamepadStatus = gamepadStatus,
             selectedUserAgent = userAgentMode,
             onUserAgentChanged = { userAgentMode = it },
             onLaunchUrl = { url, ua ->
                 launchUrl(url, ua)
+            },
+            onOpenAddBookmark = { url, title, ua ->
+                openBookmarkEditor(url, title, ua)
+            },
+            onEditBookmark = { bookmark ->
+                openEditBookmark(bookmark)
             },
             controllerMode = controllerMode,
             onOpenControllerMapping = { isMappingDialogOpen = true },
@@ -447,14 +494,25 @@ fun GamingBrowserScreen(
 
             // 4. FULL-SCREEN QUICK SETTINGS & URL BAR: Only composed when requested via Phone Back button
             if (isUrlBarVisible) {
+                val activeUrlForBookmark = webState.url.ifBlank { currentUrl }
                 SwipeableGamingUrlBar(
                     isVisible = isUrlBarVisible,
                     currentUrl = currentUrl,
                     recentUrls = recentUrls,
+                    bookmarks = bookmarks,
+                    isCurrentUrlBookmarked = bookmarkManager.isBookmarked(activeUrlForBookmark),
                     userAgentMode = userAgentMode,
                     onDismissUrlBar = { dismissUrlBar() },
                     onNavigateToUrl = { url, ua ->
                         launchUrl(url, ua)
+                    },
+                    onSaveBookmark = { urlInput, ua ->
+                        val targetUrl = urlInput.ifBlank { activeUrlForBookmark }
+                        val targetTitle = if (targetUrl == activeUrlForBookmark) webState.title else ""
+                        openBookmarkEditor(targetUrl, targetTitle, ua)
+                    },
+                    onEditBookmark = { bookmark ->
+                        openEditBookmark(bookmark)
                     },
                     onUserAgentChanged = { userAgentMode = it },
                     onReload = { webViewInstance?.reload() },
@@ -586,6 +644,7 @@ fun GamingBrowserScreen(
                 GameHubDialog(
                     currentUrl = currentUrl,
                     recentUrls = recentUrls,
+                    bookmarks = bookmarks,
                     userAgentMode = userAgentMode,
                     isVirtualGamepadEnabled = isVirtualGamepadEnabled,
                     isPerformanceHudEnabled = isPerformanceHudEnabled,
@@ -598,6 +657,11 @@ fun GamingBrowserScreen(
                     onDismiss = { isHubOpen = false },
                     onLoadUrl = { url, recommendedUa ->
                         launchUrl(url, recommendedUa)
+                    },
+                    onSaveBookmark = { urlInput ->
+                        val targetUrl = urlInput.ifBlank { webState.url.ifBlank { currentUrl } }
+                        val targetTitle = if (targetUrl == webState.url) webState.title else ""
+                        openBookmarkEditor(targetUrl, targetTitle, userAgentMode)
                     },
                     onUserAgentChanged = { newUa ->
                         userAgentMode = newUa
@@ -669,6 +733,40 @@ fun GamingBrowserScreen(
         TunnelConfigDialog(
             tunnelManager = encryptedTunnelManager,
             onDismiss = { isTunnelConfigDialogOpen = false }
+        )
+    }
+
+    // 12. Add / Edit Bookmark Dialog
+    if (isBookmarkDialogOpen) {
+        BookmarkDialog(
+            initialUrl = bookmarkDraftUrl,
+            initialTitle = bookmarkDraftTitle,
+            initialUa = bookmarkDraftUa,
+            existingBookmark = editingBookmark,
+            onDismiss = { isBookmarkDialogOpen = false },
+            onSave = { title, url, preferredUa ->
+                val target = editingBookmark
+                val saved = if (target != null) {
+                    bookmarkManager.updateBookmark(target.id, title, url, preferredUa)
+                } else {
+                    bookmarkManager.addBookmark(url, title, preferredUa)
+                }
+                if (saved != null) {
+                    Toast.makeText(
+                        context,
+                        "Saved bookmark: ${saved.title}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+            onDelete = { bookmark ->
+                bookmarkManager.removeBookmark(bookmark.id)
+                Toast.makeText(
+                    context,
+                    "Removed bookmark: ${bookmark.title}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         )
     }
 }
